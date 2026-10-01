@@ -1,0 +1,66 @@
+{
+  "name": "pandas-ts",
+  "version": "0.0.1",
+  "description": "A 100% pandas-compatible DataFrame & Series library for TypeScript and JavaScript, powered by a high-performance C++ core (Node.js native addon + WebAssembly).",
+  "keywords": [
+    "pandas",
+    "pandas-ts",
+    "dataframe",
+    "series",
+    "data-analysis",
+    "data-science",
+    "data-manipulation",
+    "typescript",
+    "javascript",
+    "nodejs",
+    "csv",
+    "groupby",
+    "time-series",
+    "analytics",
+    "numpy",
+    "c++",
+    "native",
+    "napi",
+    "webassembly",
+    "wasm",
+    "performance"
+  ],
+  "author": "Rajan <rajankr542@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({type:'commonjs'}))\"",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node test/smoke.mjs && node test/smoke.cjs",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^5.9.3"
+  }
+}
