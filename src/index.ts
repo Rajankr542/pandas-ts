@@ -41,3 +41,11 @@ export { concat, merge } from './functions.js';
 export { Rolling } from './window/rolling.js';
 export { Expanding } from './window/expanding.js';
 export { EWM } from './window/ewm.js';
+
+// IO functions
+export {
+  read_csv, to_csv, parseCsv, toCsvString,
+  read_json, to_json, parseJson, toJsonString,
+  read_parquet, to_parquet,
+  read_excel, to_excel,
+} from './io/index.js';
