@@ -7,6 +7,9 @@
 import { DType, float64, int64, bool_, string_, object_, normalizeDType } from './dtype.js';
 import { IndexError, KeyError, ValueError } from './errors.js';
 import { isMissing, NA } from './na.js';
+import { Rolling, RollingOptions } from './window/rolling.js';
+import { Expanding, ExpandingOptions } from './window/expanding.js';
+import { EWM, EWMOptions } from './window/ewm.js';
 
 // Internal column data storage
 type ColumnData = Float64Array | Float32Array | Int32Array | Int16Array | Int8Array |
@@ -615,10 +618,18 @@ export class Series {
     });
   }
 
-  // ── Rolling ──────────────────────────────────────────────────────────────────
+  // ── Rolling / Expanding / EWM ────────────────────────────────────────────────
 
-  rolling(window: number, options: { min_periods?: number } = {}): _SeriesRolling {
-    return new _SeriesRolling(this, window, options.min_periods ?? window);
+  rolling(window: number, options: RollingOptions = {}): Rolling {
+    return new Rolling(this, window, options);
+  }
+
+  expanding(options: ExpandingOptions = {}): Expanding {
+    return new Expanding(this, options);
+  }
+
+  ewm(options: EWMOptions): EWM {
+    return new EWM(this, options);
   }
 
   // ── Between ──────────────────────────────────────────────────────────────────
@@ -645,60 +656,6 @@ export class Series {
   _getDType(): DType { return this._dtype; }
   _getIndex(): (string | number)[] { return this._index; }
   _setIndex(idx: (string | number)[]): void { this._index = idx; }
-}
-
-// ── Rolling window helper ──────────────────────────────────────────────────────
-
-class _SeriesRolling {
-  private _series: Series;
-  private _window: number;
-  private _minPeriods: number;
-
-  constructor(series: Series, window: number, minPeriods: number) {
-    if (window <= 0) throw new ValueError('window must be > 0');
-    this._series = series;
-    this._window = window;
-    this._minPeriods = minPeriods;
-  }
-
-  mean(): Series {
-    return this._apply(vals => vals.reduce((a, b) => a + b, 0) / vals.length);
-  }
-
-  sum(): Series {
-    return this._apply(vals => vals.reduce((a, b) => a + b, 0));
-  }
-
-  min(): Series {
-    return this._apply(vals => Math.min(...vals));
-  }
-
-  max(): Series {
-    return this._apply(vals => Math.max(...vals));
-  }
-
-  std(ddof = 1): Series {
-    return this._apply(vals => {
-      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const ss = vals.reduce((a, b) => a + (b - m) ** 2, 0);
-      return Math.sqrt(ss / (vals.length - ddof));
-    });
-  }
-
-  private _apply(fn: (vals: number[]) => number): Series {
-    const n = this._series.size;
-    const result = new Float64Array(n);
-    for (let i = 0; i < n; i++) {
-      const start = Math.max(0, i - this._window + 1);
-      const vals: number[] = [];
-      for (let j = start; j <= i; j++) {
-        const v = this._series.iloc(j);
-        if (!isMissing(v)) vals.push(Number(v));
-      }
-      result[i] = vals.length >= this._minPeriods ? fn(vals) : NaN;
-    }
-    return new Series(result, { dtype: float64, index: this._series.index });
-  }
 }
 
 // ── Dtype inference helpers ───────────────────────────────────────────────────

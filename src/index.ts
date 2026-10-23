@@ -36,3 +36,8 @@ export { NA, NaT, NaN_, isNA, isNaN_, isNaT, isMissing } from './na.js';
 
 // Top-level convenience functions
 export { concat, merge } from './functions.js';
+
+// Window functions
+export { Rolling } from './window/rolling.js';
+export { Expanding } from './window/expanding.js';
+export { EWM } from './window/ewm.js';

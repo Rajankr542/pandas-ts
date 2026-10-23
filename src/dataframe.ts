@@ -8,6 +8,9 @@ import { Series } from './series.js';
 import { DType, normalizeDType } from './dtype.js';
 import { KeyError, ValueError, NotImplementedError } from './errors.js';
 import { isMissing, NA } from './na.js';
+import { Rolling, RollingOptions } from './window/rolling.js';
+import { Expanding, ExpandingOptions } from './window/expanding.js';
+import { EWM, EWMOptions } from './window/ewm.js';
 
 export type DataInput =
   | Record<string, unknown[] | Float64Array | Int32Array | Uint8Array | BigInt64Array>
@@ -569,6 +572,20 @@ export class DataFrame {
 
   groupby(by: string | string[]): _DataFrameGroupBy {
     return new _DataFrameGroupBy(this, Array.isArray(by) ? by : [by]);
+  }
+
+  // ── Rolling / Expanding / EWM ────────────────────────────────────────────────
+
+  rolling(window: number, options: RollingOptions = {}): Rolling {
+    return new Rolling(this, window, options);
+  }
+
+  expanding(options: ExpandingOptions = {}): Expanding {
+    return new Expanding(this, options);
+  }
+
+  ewm(options: EWMOptions): EWM {
+    return new EWM(this, options);
   }
 
   // ── Type conversion ───────────────────────────────────────────────────────────

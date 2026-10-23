@@ -121,7 +121,7 @@ describe('Series', () => {
 
   it('rolling mean', () => {
     const s = new Series([1, 2, 3, 4, 5]);
-    const rm = s.rolling(3).mean();
+    const rm = s.rolling(3).mean() as Series;
     expect(Number(rm.iloc(0))).toBeNaN();
     expect(Number(rm.iloc(2))).toBe(2);
     expect(Number(rm.iloc(4))).toBe(4);
