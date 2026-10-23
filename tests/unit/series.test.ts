@@ -41,7 +41,8 @@ describe('Series', () => {
 
   it('std() matches pandas ddof=1', () => {
     const s = new Series([2, 4, 4, 4, 5, 5, 7, 9]);
-    expect(s.std()).toBeCloseTo(2.0, 5);
+    // pandas: np.std([2,4,4,4,5,5,7,9], ddof=1) ≈ 2.1381
+    expect(s.std()).toBeCloseTo(2.1381, 3);
   });
 
   it('isna() detects NaN', () => {
