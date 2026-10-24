@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.1.0" data-path="guides/groupby.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GroupBy · pandas-ts v1.1.0</title>
+<meta name="description" content="Split-apply-combine with groupby: aggregation, transformation, filtering and iteration.">
+<meta property="og:title" content="GroupBy · pandas-ts">
+<meta property="og:description" content="Split-apply-combine with groupby: aggregation, transformation, filtering and iteration.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="guide">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.1.0" selected>v1.1.0 (latest)</option><option value="1.0.0">v1.0.0</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html" aria-current="page">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li class="active"><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
+  <main id="content" class="content">
+<article class="prose"><p>GroupBy follows the <strong>split-apply-combine</strong> paradigm:</p>
+<ol><li><strong>Split</strong> the data into groups based on some criteria</li><li><strong>Apply</strong> a function to each group independently</li><li><strong>Combine</strong> the results back into a DataFrame or Series</li></ol>
+<h2 id="basic-usage">Basic usage<a class="anchor" href="#basic-usage" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { DataFrame, Series } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({
+  city: [<span class="t-str">'Delhi'</span>, <span class="t-str">'Mumbai'</span>, <span class="t-str">'Delhi'</span>, <span class="t-str">'Pune'</span>, <span class="t-str">'Mumbai'</span>, <span class="t-str">'Delhi'</span>],
+  sales: [<span class="t-num">100</span>, <span class="t-num">200</span>, <span class="t-num">150</span>, <span class="t-num">300</span>, <span class="t-num">250</span>, <span class="t-num">200</span>],
+  year: [<span class="t-num">2023</span>, <span class="t-num">2023</span>, <span class="t-num">2024</span>, <span class="t-num">2024</span>, <span class="t-num">2024</span>, <span class="t-num">2024</span>],
+});
+
+<span class="t-com">// Group by one column</span>
+<span class="t-kw">const</span> byCity = df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>);
+
+<span class="t-com">// Common aggregations</span>
+byCity.<span class="t-fn">sum</span>().<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [450, 450, 300]</span>
+byCity.<span class="t-fn">mean</span>().<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">to_list</span>();   <span class="t-res">// =&gt; [150, 225, 300]</span>
+byCity.<span class="t-fn">count</span>().<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">to_list</span>();  <span class="t-res">// =&gt; [3, 2, 1]</span></code></pre></div>
+<h2 id="multiple-aggregations">Multiple aggregations<a class="anchor" href="#multiple-aggregations" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Named aggregation</span>
+df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">agg</span>({
+  sales: [<span class="t-str">'sum'</span>, <span class="t-str">'mean'</span>, <span class="t-str">'std'</span>, <span class="t-str">'count'</span>],
+  year: <span class="t-str">'min'</span>,
+});
+<span class="t-com">// columns: ['sales_sum', 'sales_mean', 'sales_std', 'sales_count', 'year_min']</span></code></pre></div>
+<h2 id="group-by-multiple-columns">Group by multiple columns<a class="anchor" href="#group-by-multiple-columns" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">groupby</span>([<span class="t-str">'city'</span>, <span class="t-str">'year'</span>]).<span class="t-fn">sum</span>().<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">to_list</span>();</code></pre></div>
+<h2 id="transform">Transform<a class="anchor" href="#transform" aria-label="Link to this section">#</a></h2>
+<p>Transform returns a Series/DataFrame with the same index as the input, with each value replaced by the result of the group function:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Normalize within group (subtract group mean)</span>
+<span class="t-kw">const</span> z_score = df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">transform</span>(s =&gt; {
+  <span class="t-kw">const</span> mean = s.<span class="t-fn">mean</span>();
+  <span class="t-kw">const</span> std = s.<span class="t-fn">std</span>();
+  <span class="t-kw">return</span> s.<span class="t-fn">sub</span>(mean).<span class="t-fn">div</span>(std);
+});
+
+<span class="t-com">// Fill NaN with group mean</span>
+df.<span class="t-fn">assign</span>({
+  sales: df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">transform</span>(s =&gt; s.<span class="t-fn">fillna</span>(s.<span class="t-fn">mean</span>())).<span class="t-fn">col</span>(<span class="t-str">'sales'</span>)
+})</code></pre></div>
+<h2 id="filter">Filter<a class="anchor" href="#filter" aria-label="Link to this section">#</a></h2>
+<p>Return only groups that satisfy a condition:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Keep only cities with total sales &gt; 400</span>
+df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">filter</span>(grp =&gt; grp.<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">sum</span>() &gt; <span class="t-num">400</span>);</code></pre></div>
+<h2 id="apply">apply<a class="anchor" href="#apply" aria-label="Link to this section">#</a></h2>
+<p>Apply an arbitrary function to each group:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Get top 2 rows per group by sales</span>
+df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">apply</span>(grp =&gt;
+  grp.<span class="t-fn">sort_values</span>(<span class="t-str">'sales'</span>, { ascending: <span class="t-kw">false</span> }).<span class="t-fn">head</span>(<span class="t-num">2</span>)
+);</code></pre></div>
+<h2 id="seriesgroupby">SeriesGroupBy<a class="anchor" href="#seriesgroupby" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> s = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>, <span class="t-num">4</span>, <span class="t-num">5</span>, <span class="t-num">6</span>], { index: [<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'a'</span>,<span class="t-str">'b'</span>] });
+s.<span class="t-fn">groupby</span>(s.index).<span class="t-fn">sum</span>().<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [9, 12]</span>
+s.<span class="t-fn">groupby</span>(s.index).<span class="t-fn">mean</span>().<span class="t-fn">to_list</span>();   <span class="t-res">// =&gt; [3, 4]</span></code></pre></div>
+<h2 id="iteration">Iteration<a class="anchor" href="#iteration" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Iterate over groups</span>
+<span class="t-kw">for</span> (<span class="t-kw">const</span> [key, group] <span class="t-kw">of</span> df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>)) {
+  console.<span class="t-fn">log</span>(key, group.shape);
+}</code></pre></div>
+<h2 id="groupby-with-time-series">GroupBy with time series<a class="anchor" href="#groupby-with-time-series" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> ts = <span class="t-kw">new</span> pd.<span class="t-fn">DataFrame</span>({
+  date: pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">12</span>, freq: <span class="t-str">'MS'</span> }),
+  value: Array.<span class="t-kw">from</span>({ length: <span class="t-num">12</span> }, () =&gt; Math.<span class="t-fn">random</span>() * <span class="t-num">100</span>),
+});
+
+<span class="t-com">// Resample monthly to quarterly</span>
+ts.<span class="t-fn">resample</span>(<span class="t-str">'QS'</span>, { on: <span class="t-str">'date'</span> }).<span class="t-fn">sum</span>();</code></pre></div></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#basic-usage">Basic usage</a></li><li class="l2"><a href="#multiple-aggregations">Multiple aggregations</a></li><li class="l2"><a href="#group-by-multiple-columns">Group by multiple columns</a></li><li class="l2"><a href="#transform">Transform</a></li><li class="l2"><a href="#filter">Filter</a></li><li class="l2"><a href="#apply">apply</a></li><li class="l2"><a href="#seriesgroupby">SeriesGroupBy</a></li><li class="l2"><a href="#iteration">Iteration</a></li><li class="l2"><a href="#groupby-with-time-series">GroupBy with time series</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.1.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.1.0","versions":["1.1.0","1.0.0"]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>

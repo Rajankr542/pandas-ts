@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.1.0" data-path="compatibility.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pandas compatibility · pandas-ts v1.1.0</title>
+<meta name="description" content="Known differences between pandas-ts and Python pandas.">
+<meta property="og:title" content="pandas compatibility · pandas-ts">
+<meta property="og:description" content="Known differences between pandas-ts and Python pandas.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.1.0" selected>v1.1.0 (latest)</option><option value="1.0.0">v1.0.0</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html" aria-current="page">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"></nav>
+  <main id="content" class="content">
+<article class="prose"><p>pandas-ts aims to match Python pandas closely. This page lists every known difference.</p>
+<h2 id="arithmetic-operators">Arithmetic operators<a class="anchor" href="#arithmetic-operators" aria-label="Link to this section">#</a></h2>
+<p>Python pandas uses operator overloading (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>). JavaScript has no operator overloading, so pandas-ts uses named methods:</p>
+<div class="table"><table><thead><tr><th>pandas (Python)</th><th>pandas-ts (TypeScript)</th></tr></thead><tbody><tr><td><code>s + 1</code></td><td><code>s.add(1)</code></td></tr><tr><td><code>s - 1</code></td><td><code>s.sub(1)</code></td></tr><tr><td><code>s * 2</code></td><td><code>s.mul(2)</code></td></tr><tr><td><code>s / 2</code></td><td><code>s.div(2)</code></td></tr><tr><td><code>s // 2</code></td><td><code>s.floordiv(2)</code></td></tr><tr><td><code>s % 2</code></td><td><code>s.mod(2)</code></td></tr><tr><td><code>s ** 2</code></td><td><code>s.pow(2)</code></td></tr><tr><td><code>s1 + s2</code></td><td><code>s1.add(s2)</code></td></tr><tr><td><code>df['a'] + df['b']</code></td><td><code>df.col('a').add(df.col('b'))</code></td></tr></tbody></table></div>
+<h2 id="dataframe-eval-and-pd-eval">DataFrame.eval and pd.eval<a class="anchor" href="#dataframe-eval-and-pd-eval" aria-label="Link to this section">#</a></h2>
+<p>In pandas, <code>df.eval('a + b')</code> is a method named <code>eval</code>. In pandas-ts, this is <code>df.evalExpr('a + b')</code> because <code>eval</code> is a reserved identifier in JavaScript.</p>
+<p>The top-level <code>pd.eval</code> is available as the named export <code>pdEval</code>:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { pdEval } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-fn">pdEval</span>(<span class="t-str">'2 + 3'</span>);    <span class="t-res">// =&gt; 5</span></code></pre></div>
+<h2 id="column-access">Column access<a class="anchor" href="#column-access" aria-label="Link to this section">#</a></h2>
+<p>In Python, <code>df['sales']</code> or <code>df.sales</code> returns a Series. In TypeScript, the bracket and dot operators work differently:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// pandas-ts</span>
+df.<span class="t-fn">col</span>(<span class="t-str">'sales'</span>)           <span class="t-com">// returns a Series</span>
+df.<span class="t-fn">get</span>(<span class="t-str">'sales'</span>)           <span class="t-com">// same as col()</span></code></pre></div>
+<h2 id="not-yet-implemented-stubs">Not yet implemented (stubs)<a class="anchor" href="#not-yet-implemented-stubs" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody><tr><td><code>read_hdf</code> / <code>to_hdf</code></td><td>Stub — requires a native HDF5 C library</td></tr><tr><td><code>read_stata</code></td><td>Stub — requires a Stata binary parser</td></tr><tr><td><code>read_sas</code></td><td>Not implemented</td></tr><tr><td><code>read_spss</code></td><td>Not implemented</td></tr><tr><td><code>read_orc</code></td><td>Not implemented</td></tr><tr><td><code>DataFrame.style</code></td><td>Stub — CSS styling not rendered</td></tr><tr><td><code>DataFrame.plot</code></td><td>Not implemented — requires a chart renderer</td></tr></tbody></table></div>
+<h2 id="nan-and-null">NaN and null<a class="anchor" href="#nan-and-null" aria-label="Link to this section">#</a></h2>
+<p>pandas-ts treats <code>null</code>, <code>undefined</code>, and <code>NaN</code> all as missing values. <code>isna(null)</code>, <code>isna(undefined)</code>, and <code>isna(NaN)</code> all return <code>true</code>, matching pandas behaviour for <code>None</code> and <code>NaN</code>.</p>
+<h2 id="integer-precision">Integer precision<a class="anchor" href="#integer-precision" aria-label="Link to this section">#</a></h2>
+<p>JavaScript <code>number</code> is an IEEE 754 double, which is exact up to 2^53. pandas-ts stores integer Series as JavaScript numbers. For very large integers (&gt; 9007199254740991), precision may be lost.</p>
+<h2 id="dtypes">dtypes<a class="anchor" href="#dtypes" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>pandas</th><th>pandas-ts</th></tr></thead><tbody><tr><td><code>int64</code></td><td><code>'int64'</code></td></tr><tr><td><code>float64</code></td><td><code>'float64'</code></td></tr><tr><td><code>object</code></td><td><code>'object'</code> (strings and mixed)</td></tr><tr><td><code>bool</code></td><td><code>'bool'</code></td></tr><tr><td><code>datetime64[ns]</code></td><td><code>'datetime64'</code></td></tr><tr><td><code>timedelta64[ns]</code></td><td><code>'timedelta64'</code></td></tr><tr><td><code>category</code></td><td><code>'category'</code></td></tr></tbody></table></div>
+<h2 id="index">Index<a class="anchor" href="#index" aria-label="Link to this section">#</a></h2>
+<p>pandas-ts Index is backed by a plain JavaScript array. Operations that require sorted index lookups (like <code>searchsorted</code>) work correctly but may be slower than pandas for very large indexes.</p>
+<h2 id="iloc-returns-scalars-directly">iloc returns scalars directly<a class="anchor" href="#iloc-returns-scalars-directly" aria-label="Link to this section">#</a></h2>
+<p>In pandas, <code>s.iloc[1]</code> returns a scalar. In pandas-ts, <code>s.iloc(1)</code> also returns the scalar directly — no need to call <code>.item()</code>.</p></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#arithmetic-operators">Arithmetic operators</a></li><li class="l2"><a href="#dataframe-eval-and-pd-eval">DataFrame.eval and pd.eval</a></li><li class="l2"><a href="#column-access">Column access</a></li><li class="l2"><a href="#not-yet-implemented-stubs">Not yet implemented (stubs)</a></li><li class="l2"><a href="#nan-and-null">NaN and null</a></li><li class="l2"><a href="#integer-precision">Integer precision</a></li><li class="l2"><a href="#dtypes">dtypes</a></li><li class="l2"><a href="#index">Index</a></li><li class="l2"><a href="#iloc-returns-scalars-directly">iloc returns scalars directly</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.1.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.1.0","versions":["1.1.0","1.0.0"]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>

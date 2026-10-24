@@ -1,0 +1,14 @@
+{
+  "version": "1.1.0",
+  "package": "pandas-ts",
+  "date": "2026-10-24",
+  "pandas": "2.2.3",
+  "node": ">=18",
+  "documented": 69,
+  "coverage": {
+    "implemented_series": 160,
+    "implemented_dataframe": 145,
+    "total_tracked": 310,
+    "coverage": 95.5
+  }
+}

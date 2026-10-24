@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.1.0" data-path="reference/dataframe.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataFrame · pandas-ts v1.1.0</title>
+<meta name="description" content="Two-dimensional, size-mutable, potentially heterogeneous tabular data. Contains labeled axes (rows and columns).">
+<meta property="og:title" content="DataFrame · pandas-ts">
+<meta property="og:description" content="Two-dimensional, size-mutable, potentially heterogeneous tabular data. Contains labeled axes (rows and columns).">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.1.0" selected>v1.1.0 (latest)</option><option value="1.0.0">v1.0.0</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html">Guides</a><a href="../reference/index.html" aria-current="page">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li class="section"><span>Core</span><ul><li><a href="series.html">Series</a></li><li class="active"><a href="dataframe.html">DataFrame</a></li></ul></li><li class="section"><span>Operations</span><ul><li><a href="functions.html">Top-level functions</a></li><li><a href="groupby.html">GroupBy</a></li></ul></li><li class="section"><span>IO and utilities</span><ul><li><a href="io.html">IO</a></li><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">pd.testing</a></li></ul></li></ul></nav>
+  <main id="content" class="content">
+<article class="prose ref">
+<p class="eyebrow">API reference</p>
+<h1>DataFrame</h1>
+<p class="lede">Two-dimensional, size-mutable, potentially heterogeneous tabular data. Contains labeled axes (rows and columns).</p>
+<div class="summary-table table"><table><thead><tr><th>Name</th><th>Summary</th></tr></thead><tbody><tr><td><a href="#new-DataFrame"><code>new DataFrame</code></a></td><td>Construct a DataFrame from an object of arrays, an array of objects, another Dat</td></tr><tr><td><a href="#DataFrame-shape"><code>DataFrame#shape</code></a></td><td>Return a [rows, columns] tuple.</td></tr><tr><td><a href="#DataFrame-columns"><code>DataFrame#columns</code></a></td><td>Return the column labels of the DataFrame.</td></tr><tr><td><a href="#DataFrame-index"><code>DataFrame#index</code></a></td><td>Return the row labels of the DataFrame.</td></tr><tr><td><a href="#DataFrame-dtypes"><code>DataFrame#dtypes</code></a></td><td>Return a Series with the dtype of each column.</td></tr><tr><td><a href="#DataFrame-head"><code>DataFrame#head</code></a></td><td>Return the first n rows. Default n is 5.</td></tr><tr><td><a href="#DataFrame-tail"><code>DataFrame#tail</code></a></td><td>Return the last n rows.</td></tr><tr><td><a href="#DataFrame-describe"><code>DataFrame#describe</code></a></td><td>Generate descriptive statistics for numeric columns: count, mean, std, min, 25%,</td></tr><tr><td><a href="#DataFrame-col"><code>DataFrame#col</code></a></td><td>Select a single column by name, returning it as a Series.</td></tr><tr><td><a href="#DataFrame-assign"><code>DataFrame#assign</code></a></td><td>Assign new columns to a DataFrame. Returns a new DataFrame with all existing col</td></tr><tr><td><a href="#DataFrame-drop"><code>DataFrame#drop</code></a></td><td>Drop specified labels from rows or columns.</td></tr><tr><td><a href="#DataFrame-rename"><code>DataFrame#rename</code></a></td><td>Rename columns using a mapping.</td></tr><tr><td><a href="#DataFrame-fillna"><code>DataFrame#fillna</code></a></td><td>Fill NA/NaN values.</td></tr><tr><td><a href="#DataFrame-dropna"><code>DataFrame#dropna</code></a></td><td>Remove missing values.</td></tr><tr><td><a href="#DataFrame-groupby"><code>DataFrame#groupby</code></a></td><td>Group the DataFrame by one or more columns.</td></tr><tr><td><a href="#DataFrame-merge"><code>DataFrame#merge</code></a></td><td>Merge DataFrame objects with a database-style join.</td></tr><tr><td><a href="#DataFrame-pivot-table"><code>DataFrame#pivot_table</code></a></td><td>Create a spreadsheet-style pivot table as a DataFrame.</td></tr><tr><td><a href="#DataFrame-melt"><code>DataFrame#melt</code></a></td><td>Unpivot a DataFrame from wide to long format.</td></tr><tr><td><a href="#DataFrame-sort-values"><code>DataFrame#sort_values</code></a></td><td>Sort by the values along either axis.</td></tr><tr><td><a href="#DataFrame-query"><code>DataFrame#query</code></a></td><td>Query the columns of a DataFrame with a boolean expression string.</td></tr><tr><td><a href="#DataFrame-evalExpr"><code>DataFrame#evalExpr</code></a></td><td>Evaluate an expression against the DataFrame columns. Returns a Series with the </td></tr><tr><td><a href="#DataFrame-corr"><code>DataFrame#corr</code></a></td><td>Compute pairwise Pearson correlation of columns.</td></tr><tr><td><a href="#DataFrame-cov-matrix"><code>DataFrame#cov_matrix</code></a></td><td>Compute pairwise covariance of columns (powered by numera).</td></tr><tr><td><a href="#DataFrame-to-csv"><code>DataFrame#to_csv</code></a></td><td>Write DataFrame to a CSV file or return as a string.</td></tr><tr><td><a href="#DataFrame-to-json"><code>DataFrame#to_json</code></a></td><td>Convert the DataFrame to a JSON string.</td></tr><tr><td><a href="#DataFrame-T"><code>DataFrame#T</code></a></td><td>Transpose the DataFrame (swap rows and columns).</td></tr><tr><td><a href="#DataFrame-sum-axis-1"><code>DataFrame#sum (axis=1)</code></a></td><td>Sum of values. When <code>axis=0</code> (default) returns a column-wise record. When `axis=</td></tr><tr><td><a href="#DataFrame-mean-axis-1"><code>DataFrame#mean (axis=1)</code></a></td><td>Mean of values. When <code>axis=1</code> returns a row-wise Series.</td></tr><tr><td><a href="#DataFrame-dropna-axis-1"><code>DataFrame#dropna (axis=1)</code></a></td><td>Remove missing values. <code>axis=1</code> drops columns (instead of rows) that contain NA </td></tr><tr><td><a href="#DataFrame-concat-axis-1"><code>DataFrame#concat (axis=1)</code></a></td><td>Concatenate DataFrames. <code>axis=1</code> stacks them side-by-side (column-wise). Duplica</td></tr><tr><td><a href="#DataFrame-to-dict"><code>DataFrame#to_dict</code></a></td><td>Convert the DataFrame to a dictionary. <code>orient</code> controls the output shape: `'dic</td></tr><tr><td><a href="#DataFrame-to-string"><code>DataFrame#to_string</code></a></td><td>Render the DataFrame to a tab-separated string suitable for console output. Trun</td></tr><tr><td><a href="#DataFrame-convert-dtypes"><code>DataFrame#convert_dtypes</code></a></td><td>Convert columns to the best possible dtype. String/object columns whose values a</td></tr><tr><td><a href="#DataFrame-corr-matrix-spearman"><code>DataFrame#corr_matrix (spearman)</code></a></td><td>Compute pairwise correlation. Supports <code>'pearson'</code> (default) and <code>'spearman'</code> (r</td></tr></tbody></table></div>
+<article class="api" id="new-DataFrame">
+<header class="api-head"><h3><code>new DataFrame</code></h3><a class="anchor" href="#new-DataFrame" aria-label="Link to new DataFrame">#</a></header>
+<pre class="sig"><code>new DataFrame(data, options?)</code></pre>
+<p>Construct a DataFrame from an object of arrays, an array of objects, another DataFrame, or a 2D array.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>data</code><span class="ty">Record&lt;string, unknown[]&gt; | object[] | DataFrame | unknown[][]</span></dt><dd>The data.</dd></div><div><dt><code>options?</code><span class="ty">{ index?, columns? }</span></dt><dd>Construction options.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { DataFrame } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>], b: [<span class="t-num">4</span>, <span class="t-num">5</span>, <span class="t-num">6</span>] });
+df.shape;    <span class="t-res">// =&gt; [3, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-shape">
+<header class="api-head"><h3><code>DataFrame#shape</code></h3><a class="anchor" href="#DataFrame-shape" aria-label="Link to DataFrame#shape">#</a></header>
+<pre class="sig"><code>df.shape</code></pre>
+<p>Return a [rows, columns] tuple.</p>
+
+<h4>Returns</h4><p class="ret"><code>[number, number]</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ x: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>], y: [<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] }).shape;    <span class="t-res">// =&gt; [3, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-columns">
+<header class="api-head"><h3><code>DataFrame#columns</code></h3><a class="anchor" href="#DataFrame-columns" aria-label="Link to DataFrame#columns">#</a></header>
+<pre class="sig"><code>df.columns</code></pre>
+<p>Return the column labels of the DataFrame.</p>
+
+<h4>Returns</h4><p class="ret"><code>string[]</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>], b: [<span class="t-num">2</span>], c: [<span class="t-num">3</span>] }).columns;    <span class="t-res">// =&gt; ['a', 'b', 'c']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-index">
+<header class="api-head"><h3><code>DataFrame#index</code></h3><a class="anchor" href="#DataFrame-index" aria-label="Link to DataFrame#index">#</a></header>
+<pre class="sig"><code>df.index</code></pre>
+<p>Return the row labels of the DataFrame.</p>
+
+<h4>Returns</h4><p class="ret"><code>unknown[]</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>] }).index;    <span class="t-res">// =&gt; [0, 1, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-dtypes">
+<header class="api-head"><h3><code>DataFrame#dtypes</code></h3><a class="anchor" href="#DataFrame-dtypes" aria-label="Link to DataFrame#dtypes">#</a></header>
+<pre class="sig"><code>df.dtypes</code></pre>
+<p>Return a Series with the dtype of each column.</p>
+
+<h4>Returns</h4><p class="ret"><code>Record&lt;string, DType&gt;</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-str">'x'</span>,<span class="t-str">'y'</span>] });
+df.dtypes;    <span class="t-res">// =&gt; { a: DType('int64'), b: DType('object') }</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-head">
+<header class="api-head"><h3><code>DataFrame#head</code></h3><a class="anchor" href="#DataFrame-head" aria-label="Link to DataFrame#head">#</a></header>
+<pre class="sig"><code>df.head(n?)</code></pre>
+<p>Return the first n rows. Default n is 5.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] });
+df.<span class="t-fn">head</span>(<span class="t-num">3</span>).shape;    <span class="t-res">// =&gt; [3, 1]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-tail">
+<header class="api-head"><h3><code>DataFrame#tail</code></h3><a class="anchor" href="#DataFrame-tail" aria-label="Link to DataFrame#tail">#</a></header>
+<pre class="sig"><code>df.tail(n?)</code></pre>
+<p>Return the last n rows.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] }).<span class="t-fn">tail</span>(<span class="t-num">2</span>).shape;    <span class="t-res">// =&gt; [2, 1]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-describe">
+<header class="api-head"><h3><code>DataFrame#describe</code></h3><a class="anchor" href="#DataFrame-describe" aria-label="Link to DataFrame#describe">#</a></header>
+<pre class="sig"><code>df.describe()</code></pre>
+<p>Generate descriptive statistics for numeric columns: count, mean, std, min, 25%, 50%, 75%, max.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>,<span class="t-num">5</span>] });
+df.<span class="t-fn">describe</span>().index;    <span class="t-res">// =&gt; ['count','mean','std','min','25%','50%','75%','max']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-col">
+<header class="api-head"><h3><code>DataFrame#col</code></h3><a class="anchor" href="#DataFrame-col" aria-label="Link to DataFrame#col">#</a></header>
+<pre class="sig"><code>df.col(name)</code></pre>
+<p>Select a single column by name, returning it as a Series.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>name</code><span class="ty">string</span></dt><dd>Column name.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>Series</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>], b: [<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] });
+df.<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [1, 2, 3]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-assign">
+<header class="api-head"><h3><code>DataFrame#assign</code></h3><a class="anchor" href="#DataFrame-assign" aria-label="Link to DataFrame#assign">#</a></header>
+<pre class="sig"><code>df.assign(cols)</code></pre>
+<p>Assign new columns to a DataFrame. Returns a new DataFrame with all existing columns plus any new ones.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>cols</code><span class="ty">Record&lt;string, Series | unknown[]&gt;</span></dt><dd>Columns to assign.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>] });
+df.<span class="t-fn">assign</span>({ b: df.<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">mul</span>(<span class="t-num">2</span>) }).columns;    <span class="t-res">// =&gt; ['a', 'b']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-drop">
+<header class="api-head"><h3><code>DataFrame#drop</code></h3><a class="anchor" href="#DataFrame-drop" aria-label="Link to DataFrame#drop">#</a></header>
+<pre class="sig"><code>df.drop(labels, options?)</code></pre>
+<p>Drop specified labels from rows or columns.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>labels</code><span class="ty">string | string[]</span></dt><dd>Labels to drop.</dd></div><div><dt><code>options?</code><span class="ty">{ axis? }</span></dt><dd>axis=0 (rows) or axis=1 (columns). Default 0.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>], c: [<span class="t-num">5</span>,<span class="t-num">6</span>] });
+df.<span class="t-fn">drop</span>([<span class="t-str">'b'</span>], { axis: <span class="t-num">1</span> }).columns;    <span class="t-res">// =&gt; ['a', 'c']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-rename">
+<header class="api-head"><h3><code>DataFrame#rename</code></h3><a class="anchor" href="#DataFrame-rename" aria-label="Link to DataFrame#rename">#</a></header>
+<pre class="sig"><code>df.rename(mapping)</code></pre>
+<p>Rename columns using a mapping.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+df.<span class="t-fn">rename</span>({ a: <span class="t-str">'alpha'</span>, b: <span class="t-str">'beta'</span> }).columns;    <span class="t-res">// =&gt; ['alpha', 'beta']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-fillna">
+<header class="api-head"><h3><code>DataFrame#fillna</code></h3><a class="anchor" href="#DataFrame-fillna" aria-label="Link to DataFrame#fillna">#</a></header>
+<pre class="sig"><code>df.fillna(value)</code></pre>
+<p>Fill NA/NaN values.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>, NaN, <span class="t-num">3</span>] });
+df.<span class="t-fn">fillna</span>(<span class="t-num">0</span>).<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [1, 0, 3]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-dropna">
+<header class="api-head"><h3><code>DataFrame#dropna</code></h3><a class="anchor" href="#DataFrame-dropna" aria-label="Link to DataFrame#dropna">#</a></header>
+<pre class="sig"><code>df.dropna(options?)</code></pre>
+<p>Remove missing values.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>, NaN, <span class="t-num">3</span>], b: [<span class="t-num">4</span>, <span class="t-num">5</span>, NaN] });
+df.<span class="t-fn">dropna</span>().shape;    <span class="t-res">// =&gt; [1, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-groupby">
+<header class="api-head"><h3><code>DataFrame#groupby</code></h3><a class="anchor" href="#DataFrame-groupby" aria-label="Link to DataFrame#groupby">#</a></header>
+<pre class="sig"><code>df.groupby(by, options?)</code></pre>
+<p>Group the DataFrame by one or more columns.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrameGroupBy</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ city: [<span class="t-str">'A'</span>,<span class="t-str">'B'</span>,<span class="t-str">'A'</span>], sales: [<span class="t-num">100</span>, <span class="t-num">200</span>, <span class="t-num">150</span>] });
+df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>).<span class="t-fn">sum</span>().<span class="t-fn">col</span>(<span class="t-str">'sales'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [250, 200]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-merge">
+<header class="api-head"><h3><code>DataFrame#merge</code></h3><a class="anchor" href="#DataFrame-merge" aria-label="Link to DataFrame#merge">#</a></header>
+<pre class="sig"><code>df.merge(right, options?)</code></pre>
+<p>Merge DataFrame objects with a database-style join.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>right</code><span class="ty">DataFrame</span></dt><dd>Right DataFrame to merge.</dd></div><div><dt><code>options?</code><span class="ty">{ on?, how?, left_on?, right_on? }</span></dt><dd>Merge options. how defaults to 'inner'.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> left = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ id: [<span class="t-num">1</span>,<span class="t-num">2</span>], name: [<span class="t-str">'Alice'</span>,<span class="t-str">'Bob'</span>] });
+<span class="t-kw">const</span> right = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ id: [<span class="t-num">1</span>,<span class="t-num">2</span>], score: [<span class="t-num">90</span>, <span class="t-num">85</span>] });
+left.<span class="t-fn">merge</span>(right, { on: <span class="t-str">'id'</span> }).<span class="t-fn">col</span>(<span class="t-str">'score'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [90, 85]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-pivot-table">
+<header class="api-head"><h3><code>DataFrame#pivot_table</code></h3><a class="anchor" href="#DataFrame-pivot-table" aria-label="Link to DataFrame#pivot_table">#</a></header>
+<pre class="sig"><code>df.pivot_table(options)</code></pre>
+<p>Create a spreadsheet-style pivot table as a DataFrame.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({
+  city: [<span class="t-str">'A'</span>,<span class="t-str">'A'</span>,<span class="t-str">'B'</span>,<span class="t-str">'B'</span>],
+  year: [<span class="t-num">2023</span>,<span class="t-num">2024</span>,<span class="t-num">2023</span>,<span class="t-num">2024</span>],
+  sales: [<span class="t-num">100</span>,<span class="t-num">120</span>,<span class="t-num">200</span>,<span class="t-num">180</span>]
+});
+<span class="t-kw">const</span> pt = df.<span class="t-fn">pivot_table</span>({ index: <span class="t-str">'city'</span>, columns: <span class="t-str">'year'</span>, values: <span class="t-str">'sales'</span>, aggfunc: <span class="t-str">'sum'</span> });
+pt.shape;    <span class="t-res">// =&gt; [2, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-melt">
+<header class="api-head"><h3><code>DataFrame#melt</code></h3><a class="anchor" href="#DataFrame-melt" aria-label="Link to DataFrame#melt">#</a></header>
+<pre class="sig"><code>df.melt(options?)</code></pre>
+<p>Unpivot a DataFrame from wide to long format.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ id: [<span class="t-num">1</span>,<span class="t-num">2</span>], jan: [<span class="t-num">100</span>,<span class="t-num">200</span>], feb: [<span class="t-num">110</span>,<span class="t-num">210</span>] });
+<span class="t-kw">const</span> melted = df.<span class="t-fn">melt</span>({ id_vars: <span class="t-str">'id'</span>, value_vars: [<span class="t-str">'jan'</span>,<span class="t-str">'feb'</span>], var_name: <span class="t-str">'month'</span>, value_name: <span class="t-str">'sales'</span> });
+melted.shape;    <span class="t-res">// =&gt; [4, 3]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-sort-values">
+<header class="api-head"><h3><code>DataFrame#sort_values</code></h3><a class="anchor" href="#DataFrame-sort-values" aria-label="Link to DataFrame#sort_values">#</a></header>
+<pre class="sig"><code>df.sort_values(by, options?)</code></pre>
+<p>Sort by the values along either axis.</p>
+<h4>Parameters</h4><dl class="params"><div><dt><code>by</code><span class="ty">string | string[]</span></dt><dd>Column(s) to sort by.</dd></div><div><dt><code>options?</code><span class="ty">{ ascending? }</span></dt><dd>Sort direction.</dd></div></dl>
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">3</span>,<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-str">'c'</span>,<span class="t-str">'a'</span>,<span class="t-str">'b'</span>] });
+df.<span class="t-fn">sort_values</span>(<span class="t-str">'a'</span>).<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [1, 2, 3]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-query">
+<header class="api-head"><h3><code>DataFrame#query</code></h3><a class="anchor" href="#DataFrame-query" aria-label="Link to DataFrame#query">#</a></header>
+<pre class="sig"><code>df.query(expr)</code></pre>
+<p>Query the columns of a DataFrame with a boolean expression string.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>,<span class="t-num">5</span>], b: [<span class="t-num">10</span>,<span class="t-num">20</span>,<span class="t-num">30</span>,<span class="t-num">40</span>,<span class="t-num">50</span>] });
+df.<span class="t-fn">query</span>(<span class="t-str">'a &gt; 3'</span>).<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [4, 5]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-evalExpr">
+<header class="api-head"><h3><code>DataFrame#evalExpr</code></h3><a class="anchor" href="#DataFrame-evalExpr" aria-label="Link to DataFrame#evalExpr">#</a></header>
+<pre class="sig"><code>df.evalExpr(expr)</code></pre>
+<p>Evaluate an expression against the DataFrame columns. Returns a Series with the result. (Note: named <code>evalExpr</code> because <code>eval</code> is reserved in JavaScript.)</p>
+
+<h4>Returns</h4><p class="ret"><code>Series</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>], b: [<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] });
+df.<span class="t-fn">evalExpr</span>(<span class="t-str">'a + b'</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [5, 7, 9]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-corr">
+<header class="api-head"><h3><code>DataFrame#corr</code></h3><a class="anchor" href="#DataFrame-corr" aria-label="Link to DataFrame#corr">#</a></header>
+<pre class="sig"><code>df.corr(method?)</code></pre>
+<p>Compute pairwise Pearson correlation of columns.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>], b: [<span class="t-num">2</span>,<span class="t-num">4</span>,<span class="t-num">6</span>,<span class="t-num">8</span>] });
+df.<span class="t-fn">corr</span>().<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">iloc</span>(<span class="t-num">1</span>);    <span class="t-res">// =&gt; 1  (perfect correlation)</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-cov-matrix">
+<header class="api-head"><h3><code>DataFrame#cov_matrix</code></h3><a class="anchor" href="#DataFrame-cov-matrix" aria-label="Link to DataFrame#cov_matrix">#</a></header>
+<pre class="sig"><code>df.cov_matrix(min_periods?, ddof?)</code></pre>
+<p>Compute pairwise covariance of columns (powered by numera).</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>,<span class="t-num">5</span>] });
+df.<span class="t-fn">cov_matrix</span>().<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">iloc</span>(<span class="t-num">0</span>);    <span class="t-res">// =&gt; 2.5</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-to-csv">
+<header class="api-head"><h3><code>DataFrame#to_csv</code></h3><a class="anchor" href="#DataFrame-to-csv" aria-label="Link to DataFrame#to_csv">#</a></header>
+<pre class="sig"><code>df.to_csv(path?, options?)</code></pre>
+<p>Write DataFrame to a CSV file or return as a string.</p>
+
+<h4>Returns</h4><p class="ret"><code>string | void</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+df.<span class="t-fn">to_csv</span>();    <span class="t-res">// =&gt; 'a,b\n1,3\n2,4\n'</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-to-json">
+<header class="api-head"><h3><code>DataFrame#to_json</code></h3><a class="anchor" href="#DataFrame-to-json" aria-label="Link to DataFrame#to_json">#</a></header>
+<pre class="sig"><code>df.to_json(path?, options?)</code></pre>
+<p>Convert the DataFrame to a JSON string.</p>
+
+<h4>Returns</h4><p class="ret"><code>string | void</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>] }).<span class="t-fn">to_json</span>();
+<span class="t-res">// =&gt; '[{&quot;a&quot;:1},{&quot;a&quot;:2}]'</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-T">
+<header class="api-head"><h3><code>DataFrame#T</code></h3><a class="anchor" href="#DataFrame-T" aria-label="Link to DataFrame#T">#</a></header>
+<pre class="sig"><code>df.T</code></pre>
+<p>Transpose the DataFrame (swap rows and columns).</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+df.T.shape;    <span class="t-res">// =&gt; [2, 2]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-sum-axis-1">
+<header class="api-head"><h3><code>DataFrame#sum (axis=1)</code></h3><a class="anchor" href="#DataFrame-sum-axis-1" aria-label="Link to DataFrame#sum (axis=1)">#</a></header>
+<pre class="sig"><code>df.sum(axis?)</code></pre>
+<p>Sum of values. When <code>axis=0</code> (default) returns a column-wise record. When <code>axis=1</code> returns a row-wise Series.</p>
+
+<h4>Returns</h4><p class="ret"><code>Record&lt;string,number&gt; | Series</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+df.<span class="t-fn">sum</span>(<span class="t-num">1</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [4, 6]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-mean-axis-1">
+<header class="api-head"><h3><code>DataFrame#mean (axis=1)</code></h3><a class="anchor" href="#DataFrame-mean-axis-1" aria-label="Link to DataFrame#mean (axis=1)">#</a></header>
+<pre class="sig"><code>df.mean(axis?)</code></pre>
+<p>Mean of values. When <code>axis=1</code> returns a row-wise Series.</p>
+
+<h4>Returns</h4><p class="ret"><code>Record&lt;string,number&gt; | Series</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">mean</span>(<span class="t-num">1</span>).<span class="t-fn">to_list</span>();    <span class="t-res">// =&gt; [2, 3]</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-dropna-axis-1">
+<header class="api-head"><h3><code>DataFrame#dropna (axis=1)</code></h3><a class="anchor" href="#DataFrame-dropna-axis-1" aria-label="Link to DataFrame#dropna (axis=1)">#</a></header>
+<pre class="sig"><code>df.dropna({ axis?, how?, thresh? })</code></pre>
+<p>Remove missing values. <code>axis=1</code> drops columns (instead of rows) that contain NA values according to <code>how</code>/<code>thresh</code>.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>, <span class="t-kw">null</span>], b: [<span class="t-num">3</span>, <span class="t-num">4</span>] });
+df.<span class="t-fn">dropna</span>({ axis: <span class="t-num">1</span> }).columns;    <span class="t-res">// =&gt; ['b']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-concat-axis-1">
+<header class="api-head"><h3><code>DataFrame#concat (axis=1)</code></h3><a class="anchor" href="#DataFrame-concat-axis-1" aria-label="Link to DataFrame#concat (axis=1)">#</a></header>
+<pre class="sig"><code>DataFrame.concat(dfs, { axis? })</code></pre>
+<p>Concatenate DataFrames. <code>axis=1</code> stacks them side-by-side (column-wise). Duplicate column names are auto-suffixed with <code>_1</code>, <code>_2</code>, etc.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df1 = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>] });
+<span class="t-kw">const</span> df2 = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+DataFrame.<span class="t-fn">concat</span>([df1, df2], { axis: <span class="t-num">1</span> }).columns;    <span class="t-res">// =&gt; ['a','b']</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-to-dict">
+<header class="api-head"><h3><code>DataFrame#to_dict</code></h3><a class="anchor" href="#DataFrame-to-dict" aria-label="Link to DataFrame#to_dict">#</a></header>
+<pre class="sig"><code>df.to_dict(orient?)</code></pre>
+<p>Convert the DataFrame to a dictionary. <code>orient</code> controls the output shape: <code>'dict'</code> (default), <code>'list'</code>, <code>'records'</code>, <code>'series'</code>, <code>'split'</code>, <code>'index'</code>.</p>
+
+<h4>Returns</h4><p class="ret"><code>object</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] });
+df.<span class="t-fn">to_dict</span>(<span class="t-str">'records'</span>);    <span class="t-res">// =&gt; [{ a:1, b:3 }, { a:2, b:4 }]</span>
+df.<span class="t-fn">to_dict</span>(<span class="t-str">'split'</span>);      <span class="t-res">// =&gt; { index:[0,1], columns:['a','b'], data:[[1,3],[2,4]] }</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-to-string">
+<header class="api-head"><h3><code>DataFrame#to_string</code></h3><a class="anchor" href="#DataFrame-to-string" aria-label="Link to DataFrame#to_string">#</a></header>
+<pre class="sig"><code>df.to_string({ index?, max_rows?, max_cols? })</code></pre>
+<p>Render the DataFrame to a tab-separated string suitable for console output. Truncates to <code>max_rows</code> / <code>max_cols</code> with <code>...</code> indicators.</p>
+
+<h4>Returns</h4><p class="ret"><code>string</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ x: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>], y: [<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] });
+console.<span class="t-fn">log</span>(df.<span class="t-fn">to_string</span>({ max_rows: <span class="t-num">10</span> }));</code></pre></div>
+</article>
+<article class="api" id="DataFrame-convert-dtypes">
+<header class="api-head"><h3><code>DataFrame#convert_dtypes</code></h3><a class="anchor" href="#DataFrame-convert-dtypes" aria-label="Link to DataFrame#convert_dtypes">#</a></header>
+<pre class="sig"><code>df.convert_dtypes()</code></pre>
+<p>Convert columns to the best possible dtype. String/object columns whose values are all numeric strings are promoted to <code>float64</code>.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-str">'1'</span>,<span class="t-str">'2'</span>,<span class="t-str">'3'</span>], b: [<span class="t-str">'x'</span>,<span class="t-str">'y'</span>,<span class="t-str">'z'</span>] });
+df.<span class="t-fn">convert_dtypes</span>().<span class="t-fn">col</span>(<span class="t-str">'a'</span>).dtype.name;    <span class="t-res">// =&gt; 'float64'</span></code></pre></div>
+</article>
+<article class="api" id="DataFrame-corr-matrix-spearman">
+<header class="api-head"><h3><code>DataFrame#corr_matrix (spearman)</code></h3><a class="anchor" href="#DataFrame-corr-matrix-spearman" aria-label="Link to DataFrame#corr_matrix (spearman)">#</a></header>
+<pre class="sig"><code>df.corr_matrix(method?, min_periods?)</code></pre>
+<p>Compute pairwise correlation. Supports <code>'pearson'</code> (default) and <code>'spearman'</code> (rank-based). Returns a square DataFrame.</p>
+
+<h4>Returns</h4><p class="ret"><code>DataFrame</code></p>
+<h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>,<span class="t-num">4</span>], b: [<span class="t-num">4</span>,<span class="t-num">3</span>,<span class="t-num">2</span>,<span class="t-num">1</span>] });
+df.<span class="t-fn">corr_matrix</span>(<span class="t-str">'spearman'</span>).<span class="t-fn">col</span>(<span class="t-str">'b'</span>).<span class="t-fn">iloc</span>(<span class="t-num">0</span>);    <span class="t-res">// =&gt; -1</span></code></pre></div>
+</article>
+</article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l3"><a href="#new-DataFrame">DataFrame</a></li><li class="l3"><a href="#DataFrame-shape">DataFrame#shape</a></li><li class="l3"><a href="#DataFrame-columns">DataFrame#columns</a></li><li class="l3"><a href="#DataFrame-index">DataFrame#index</a></li><li class="l3"><a href="#DataFrame-dtypes">DataFrame#dtypes</a></li><li class="l3"><a href="#DataFrame-head">DataFrame#head</a></li><li class="l3"><a href="#DataFrame-tail">DataFrame#tail</a></li><li class="l3"><a href="#DataFrame-describe">DataFrame#describe</a></li><li class="l3"><a href="#DataFrame-col">DataFrame#col</a></li><li class="l3"><a href="#DataFrame-assign">DataFrame#assign</a></li><li class="l3"><a href="#DataFrame-drop">DataFrame#drop</a></li><li class="l3"><a href="#DataFrame-rename">DataFrame#rename</a></li><li class="l3"><a href="#DataFrame-fillna">DataFrame#fillna</a></li><li class="l3"><a href="#DataFrame-dropna">DataFrame#dropna</a></li><li class="l3"><a href="#DataFrame-groupby">DataFrame#groupby</a></li><li class="l3"><a href="#DataFrame-merge">DataFrame#merge</a></li><li class="l3"><a href="#DataFrame-pivot-table">DataFrame#pivot_table</a></li><li class="l3"><a href="#DataFrame-melt">DataFrame#melt</a></li><li class="l3"><a href="#DataFrame-sort-values">DataFrame#sort_values</a></li><li class="l3"><a href="#DataFrame-query">DataFrame#query</a></li><li class="l3"><a href="#DataFrame-evalExpr">DataFrame#evalExpr</a></li><li class="l3"><a href="#DataFrame-corr">DataFrame#corr</a></li><li class="l3"><a href="#DataFrame-cov-matrix">DataFrame#cov_matrix</a></li><li class="l3"><a href="#DataFrame-to-csv">DataFrame#to_csv</a></li><li class="l3"><a href="#DataFrame-to-json">DataFrame#to_json</a></li><li class="l3"><a href="#DataFrame-T">DataFrame#T</a></li><li class="l3"><a href="#DataFrame-sum-axis-1">(axis=1)</a></li><li class="l3"><a href="#DataFrame-mean-axis-1">(axis=1)</a></li><li class="l3"><a href="#DataFrame-dropna-axis-1">(axis=1)</a></li><li class="l3"><a href="#DataFrame-concat-axis-1">(axis=1)</a></li><li class="l3"><a href="#DataFrame-to-dict">DataFrame#to_dict</a></li><li class="l3"><a href="#DataFrame-to-string">DataFrame#to_string</a></li><li class="l3"><a href="#DataFrame-convert-dtypes">DataFrame#convert_dtypes</a></li><li class="l3"><a href="#DataFrame-corr-matrix-spearman">(spearman)</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.1.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.1.0","versions":["1.1.0","1.0.0"]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>
