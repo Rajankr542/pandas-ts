@@ -158,7 +158,18 @@ export class Index {
   // ── Type conversion ───────────────────────────────────────────────────────────
   toArray(): unknown[] { return [...this._data]; }
   tolist(): unknown[] { return [...this._data]; }
-  astype(dtype: string): Index { return this; }
+  astype(dtype: string): Index {
+    const d = dtype.toLowerCase();
+    const converted = this._data.map(v => {
+      if (v === null || v === undefined) return v;
+      if (d === 'int64' || d === 'int32' || d === 'int' || d === 'integer') return parseInt(String(v), 10);
+      if (d === 'float64' || d === 'float32' || d === 'float' || d === 'number') return parseFloat(String(v));
+      if (d === 'str' || d === 'string' || d === 'object') return String(v);
+      if (d === 'bool' || d === 'boolean') return Boolean(v);
+      return v;
+    });
+    return new Index(converted, { name: this._name ?? undefined });
+  }
 
   // ── Repr ──────────────────────────────────────────────────────────────────────
   toString(): string {

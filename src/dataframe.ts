@@ -312,7 +312,30 @@ export class DataFrame {
     const how = options.how ?? 'any';
 
     if (axis === 1) {
-      throw new NotImplementedError('dropna(axis=1) not yet implemented');
+      // Drop columns that have any/all NA values
+      const keepCols: string[] = [];
+      for (const col of this._columnOrder) {
+        const s = this._columns.get(col)!;
+        let naCount = 0;
+        for (let i = 0; i < this._index.length; i++) {
+          if (isMissing(s._getAt(i))) naCount++;
+        }
+        const thresh = options.thresh;
+        if (thresh !== undefined) {
+          if (this._index.length - naCount >= thresh) keepCols.push(col);
+        } else if (how === 'any' && naCount === 0) {
+          keepCols.push(col);
+        } else if (how === 'all' && naCount < this._index.length) {
+          keepCols.push(col);
+        }
+      }
+      const df = new DataFrame();
+      df._index = [...this._index];
+      for (const col of keepCols) {
+        df._columns.set(col, this._columns.get(col)!);
+        df._columnOrder.push(col);
+      }
+      return df;
     }
 
     const keepPositions: number[] = [];
@@ -324,7 +347,9 @@ export class DataFrame {
         const v = this._columns.get(col)!._getAt(i);
         if (isMissing(v)) naCount++;
       }
-      if (how === 'any' && naCount === 0) keepPositions.push(i);
+      if (options.thresh !== undefined) {
+        if (nCols - naCount >= options.thresh) keepPositions.push(i);
+      } else if (how === 'any' && naCount === 0) keepPositions.push(i);
       else if (how === 'all' && naCount < nCols) keepPositions.push(i);
     }
     return this._selectRowPositions(keepPositions);
@@ -332,8 +357,16 @@ export class DataFrame {
 
   // ── Reductions ────────────────────────────────────────────────────────────────
 
-  sum(axis = 0): Record<string, number> {
-    if (axis !== 0) throw new NotImplementedError('sum(axis=1) not yet implemented');
+  sum(axis = 0): any {
+    if (axis === 1) {
+      // Row-wise sum
+      const vals = this._index.map((_, i) => {
+        let s = 0;
+        for (const col of this._columnOrder) s += Number(this._columns.get(col)!._getAt(i) ?? 0);
+        return s;
+      });
+      return new Series(vals, { index: this._index });
+    }
     const result: Record<string, number> = {};
     for (const col of this._columnOrder) {
       result[col] = Number(this._columns.get(col)!.sum());
@@ -341,8 +374,14 @@ export class DataFrame {
     return result;
   }
 
-  mean(axis = 0): Record<string, number> {
-    if (axis !== 0) throw new NotImplementedError('mean(axis=1) not yet implemented');
+  mean(axis = 0): any {
+    if (axis === 1) {
+      const vals = this._index.map((_, i) => {
+        const nums = this._columnOrder.map(col => Number(this._columns.get(col)!._getAt(i))).filter(v => !isNaN(v));
+        return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : NaN;
+      });
+      return new Series(vals, { index: this._index });
+    }
     const result: Record<string, number> = {};
     for (const col of this._columnOrder) {
       result[col] = this._columns.get(col)!.mean();
@@ -350,8 +389,14 @@ export class DataFrame {
     return result;
   }
 
-  min(axis = 0): Record<string, number> {
-    if (axis !== 0) throw new NotImplementedError('min(axis=1) not yet implemented');
+  min(axis = 0): any {
+    if (axis === 1) {
+      const vals = this._index.map((_, i) => {
+        const nums = this._columnOrder.map(col => Number(this._columns.get(col)!._getAt(i))).filter(v => !isNaN(v));
+        return nums.length ? Math.min(...nums) : NaN;
+      });
+      return new Series(vals, { index: this._index });
+    }
     const result: Record<string, number> = {};
     for (const col of this._columnOrder) {
       result[col] = this._columns.get(col)!.min();
@@ -359,8 +404,14 @@ export class DataFrame {
     return result;
   }
 
-  max(axis = 0): Record<string, number> {
-    if (axis !== 0) throw new NotImplementedError('max(axis=1) not yet implemented');
+  max(axis = 0): any {
+    if (axis === 1) {
+      const vals = this._index.map((_, i) => {
+        const nums = this._columnOrder.map(col => Number(this._columns.get(col)!._getAt(i))).filter(v => !isNaN(v));
+        return nums.length ? Math.max(...nums) : NaN;
+      });
+      return new Series(vals, { index: this._index });
+    }
     const result: Record<string, number> = {};
     for (const col of this._columnOrder) {
       result[col] = this._columns.get(col)!.max();
@@ -538,13 +589,46 @@ export class DataFrame {
       return result;
     }
 
-    throw new NotImplementedError('concat(axis=1) not yet implemented');
+    // axis=1: concatenate side-by-side (column-wise)
+    {
+      // Use the index of the first df as the reference; align others to it
+      const baseIdx = dfs[0]!._index;
+      const resultDf = new DataFrame();
+      resultDf._index = ignore_index ? Array.from({ length: baseIdx.length }, (_, i) => i) : [...baseIdx];
+
+      const usedCols = new Set<string>();
+      for (const df of dfs) {
+        for (const col of df._columnOrder) {
+          let colName = col;
+          let suffix = 0;
+          while (usedCols.has(colName)) colName = `${col}_${++suffix}`;
+          usedCols.add(colName);
+
+          // Align rows: if df has the same index, use positions; otherwise align by label
+          const vals = resultDf._index.map(idxVal => {
+            const pos = df._index.indexOf(idxVal);
+            return pos === -1 ? NA : df._columns.get(col)!._getAt(pos);
+          });
+          resultDf._columns.set(colName, new Series(vals, { name: colName, index: resultDf._index }));
+          resultDf._columnOrder.push(colName);
+        }
+      }
+      return resultDf;
+    }
   }
 
   // ── Apply / map ───────────────────────────────────────────────────────────────
 
-  apply(fn: (series: Series) => unknown, axis = 0): Record<string, unknown> {
-    if (axis !== 0) throw new NotImplementedError('apply(axis=1) not yet implemented');
+  apply(fn: (series: Series) => unknown, axis = 0): Record<string, unknown> | Series {
+    if (axis === 1) {
+      // Apply row-wise: fn receives a Series of one row
+      const vals = this._index.map((_, i) => {
+        const rowData: Record<string, unknown> = {};
+        for (const col of this._columnOrder) rowData[col] = this._columns.get(col)!._getAt(i);
+        return fn(new Series(Object.values(rowData), { index: this._columnOrder }));
+      });
+      return new Series(vals, { index: this._index });
+    }
     const result: Record<string, unknown> = {};
     for (const col of this._columnOrder) {
       result[col] = fn(this._columns.get(col)!);
@@ -720,6 +804,41 @@ export class DataFrame {
       }
       return result;
     }
+    if (orient === 'dict') {
+      // { col: { idx: val, ... }, ... }  — mirrors pandas default
+      const result: Record<string, Record<string | number, unknown>> = {};
+      for (const col of this._columnOrder) {
+        result[col] = {};
+        for (let i = 0; i < this._index.length; i++) {
+          result[col]![this._index[i] as string | number] = this._columns.get(col)!._getAt(i);
+        }
+      }
+      return result;
+    }
+    if (orient === 'series') {
+      const result: Record<string, Series> = {};
+      for (const col of this._columnOrder) {
+        result[col] = this._columns.get(col)!;
+      }
+      return result;
+    }
+    if (orient === 'split') {
+      return {
+        index: [...this._index],
+        columns: [...this._columnOrder],
+        data: Array.from({ length: this._index.length }, (_, i) =>
+          this._columnOrder.map(col => this._columns.get(col)!._getAt(i))),
+      };
+    }
+    if (orient === 'index') {
+      const result: Record<string | number, Record<string, unknown>> = {};
+      for (let i = 0; i < this._index.length; i++) {
+        const row: Record<string, unknown> = {};
+        for (const col of this._columnOrder) row[col] = this._columns.get(col)!._getAt(i);
+        result[this._index[i] as string | number] = row;
+      }
+      return result;
+    }
     throw new NotImplementedError(`to_dict(orient='${orient}') not yet implemented`);
   }
 
@@ -761,7 +880,24 @@ export class DataFrame {
 
   // ── diff ─────────────────────────────────────────────────────────────────────
   diff(periods = 1, axis = 0): DataFrame {
-    if (axis !== 0) throw new NotImplementedError('diff(axis=1) not implemented');
+    if (axis === 1) {
+      // Column-wise diff: each column minus the column `periods` to the left
+      const df = new DataFrame();
+      df._index = [...this._index];
+      for (let c = 0; c < this._columnOrder.length; c++) {
+        const col = this._columnOrder[c]!;
+        if (c < periods) {
+          df._columns.set(col, new Series(Array(this._index.length).fill(NaN), { name: col, index: df._index }));
+        } else {
+          const prevCol = this._columnOrder[c - periods]!;
+          const vals = Array.from({ length: this._index.length }, (_, i) =>
+            Number(this._columns.get(col)!._getAt(i)) - Number(this._columns.get(prevCol)!._getAt(i)));
+          df._columns.set(col, new Series(vals, { name: col, index: df._index }));
+        }
+        df._columnOrder.push(col);
+      }
+      return df;
+    }
     const df = new DataFrame();
     df._index = [...this._index];
     for (const col of this._columnOrder) {
@@ -1728,8 +1864,40 @@ export class DataFrame {
 
   // ── convert_dtypes / infer_objects ───────────────────────────────────────────
 
-  infer_objects(): DataFrame { return this.copy(); }
-  convert_dtypes(): DataFrame { return this.copy(); }
+  infer_objects(): DataFrame {
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const s = this._columns.get(col)!;
+      df._columns.set(col, s);
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
+
+  convert_dtypes(): DataFrame {
+    // Convert to best possible dtypes (numeric strings → numbers, etc.)
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const s = this._columns.get(col)!;
+      // Try to convert string/object series containing numeric strings
+      if (s.dtype.name === 'object' || s.dtype.name === 'string') {
+        const vals = Array.from({ length: s.size }, (_, i) => s._getAt(i));
+        const allNumeric = vals.every(v => v === null || v === undefined || v !== v ||
+          (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))));
+        if (allNumeric) {
+          const nums = vals.map(v => (v === null || v === undefined || (typeof v !== 'string')) ? NaN : Number(v));
+          df._columns.set(col, new Series(nums, { name: col, index: df._index }));
+          df._columnOrder.push(col);
+          continue;
+        }
+      }
+      df._columns.set(col, s);
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
 
   // ── mode ─────────────────────────────────────────────────────────────────────
 
@@ -1785,8 +1953,38 @@ export class DataFrame {
   // ── to_markdown / to_latex / to_string ───────────────────────────────────────
 
   to_string(options: { index?: boolean; max_rows?: number; max_cols?: number } = {}): string {
-    void options;
-    return this.toString();
+    const includeIndex = options.index !== false;
+    const maxRows = options.max_rows ?? 60;
+    const maxCols = options.max_cols ?? 20;
+    const nRows = this._index.length;
+    const cols = this._columnOrder.slice(0, maxCols);
+    const truncRows = nRows > maxRows;
+    const truncCols = this._columnOrder.length > maxCols;
+
+    const rowsToShow = truncRows
+      ? [...Array.from({ length: Math.ceil(maxRows / 2) }, (_, i) => i),
+         ...Array.from({ length: Math.floor(maxRows / 2) }, (_, i) => nRows - Math.floor(maxRows / 2) + i)]
+      : Array.from({ length: nRows }, (_, i) => i);
+
+    const header = includeIndex
+      ? ['', ...cols, ...(truncCols ? ['...'] : [])].join('\t')
+      : [...cols, ...(truncCols ? ['...'] : [])].join('\t');
+
+    const lines: string[] = [header];
+    let prevI = -1;
+    for (const i of rowsToShow) {
+      if (truncRows && prevI !== -1 && i !== prevI + 1) lines.push('...');
+      const vals = cols.map(col => {
+        const v = this._columns.get(col)!._getAt(i);
+        return v === null || v === undefined ? 'NaN' : String(v);
+      });
+      const row = includeIndex
+        ? [String(this._index[i]), ...vals, ...(truncCols ? ['...'] : [])].join('\t')
+        : [...vals, ...(truncCols ? ['...'] : [])].join('\t');
+      lines.push(row);
+      prevI = i;
+    }
+    return lines.join('\n');
   }
 
   to_markdown(options: { index?: boolean } = {}): string {
@@ -1846,9 +2044,19 @@ export class DataFrame {
 
   /** Compute correlation matrix */
   corr_matrix(method: 'pearson' | 'spearman' = 'pearson', min_periods = 1): DataFrame {
-    void method;
-    const cov = this.cov_matrix(min_periods, 1);
     const cols = this._columnOrder;
+
+    if (method === 'spearman') {
+      // Rank each column then compute Pearson on ranks
+      const ranked = new DataFrame();
+      ranked._index = [...this._index];
+      for (const col of cols) {
+        ranked._columns.set(col, this._columns.get(col)!.rank('average'));
+        ranked._columnOrder.push(col);
+      }
+      return ranked.corr_matrix('pearson', min_periods);
+    }
+    const cov = this.cov_matrix(min_periods, 1);
     const data: Record<string, unknown[]> = {};
     for (const c1 of cols) {
       data[c1] = cols.map(c2 => {

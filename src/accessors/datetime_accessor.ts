@@ -230,8 +230,31 @@ export class DatetimeAccessor {
 
   // ── Timezone ──────────────────────────────────────────────────────────────────
   get tz(): Series { return new Series(new Array(this._series.size).fill(null), { index: this._series.index }); }
-  tz_localize(_tz: string): Series { return this._series; }
-  tz_convert(_tz: string): Series { return this._series; }
+  tz_localize(_tz: string): Series {
+    // Store tz as metadata on the returned series (JS Dates are always UTC)
+    const s = this._series.copy();
+    (s as any)._tz = _tz;
+    return s;
+  }
+
+  tz_convert(_tz: string): Series {
+    // Re-express each Date in a different timezone offset
+    const vals = Array.from({ length: this._series.size }, (_, i) => {
+      const v = (this._series as any)._getAt(i);
+      if (!(v instanceof Date)) return v;
+      try {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: _tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        });
+        const parts = Object.fromEntries(fmt.formatToParts(v).map(p => [p.type, p.value]));
+        return new Date(`${parts['year']}-${parts['month']}-${parts['day']}T${parts['hour']}:${parts['minute']}:${parts['second']}`);
+      } catch { return v; }
+    });
+    const s = new Series(vals, { index: this._series.index });
+    (s as any)._tz = _tz;
+    return s;
+  }
 
   // ── to_period ─────────────────────────────────────────────────────────────────
   to_period(freq = 'D'): Series {

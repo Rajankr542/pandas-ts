@@ -123,13 +123,43 @@ export class Rolling {
     });
   }
 
-  corr(_other: Series | DataFrame): Series | DataFrame {
-    // Simplified: correlation of window with itself approaches 1; return mean as placeholder
-    return this.mean();
+  corr(other?: Series | DataFrame): Series | DataFrame {
+    if (!other) {
+      // Auto-correlation: corr(series, series.shift(1))
+      return this._apply(vals => {
+        if (vals.length < 2) return NaN;
+        const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+        let num = 0, denom = 0;
+        for (let i = 0; i < vals.length; i++) num += (vals[i]! - mean) * (vals[i]! - mean);
+        denom = num;
+        return denom === 0 ? NaN : num / denom; // = 1 for same series
+      });
+    }
+    // Cross-correlation with another series
+    return this._applyCross(other, (a, b) => {
+      if (a.length < 2) return NaN;
+      const ma = a.reduce((s, v) => s + v, 0) / a.length;
+      const mb = b.reduce((s, v) => s + v, 0) / b.length;
+      let num = 0, sa = 0, sb = 0;
+      for (let i = 0; i < a.length; i++) {
+        num += (a[i]! - ma) * (b[i]! - mb);
+        sa += (a[i]! - ma) ** 2;
+        sb += (b[i]! - mb) ** 2;
+      }
+      return sa === 0 || sb === 0 ? NaN : num / Math.sqrt(sa * sb);
+    });
   }
 
-  cov(_other: Series | DataFrame): Series | DataFrame {
-    return this.var();
+  cov(other?: Series | DataFrame): Series | DataFrame {
+    if (!other) {
+      return this.var();
+    }
+    return this._applyCross(other, (a, b) => {
+      if (a.length < 2) return NaN;
+      const ma = a.reduce((s, v) => s + v, 0) / a.length;
+      const mb = b.reduce((s, v) => s + v, 0) / b.length;
+      return a.reduce((s, v, i) => s + (v - ma) * (b[i]! - mb), 0) / (a.length - 1);
+    });
   }
 
   private _apply(fn: (vals: number[]) => number): Series | DataFrame {
@@ -163,5 +193,30 @@ export class Rolling {
       result[i] = vals.length >= this._minPeriods ? fn(vals) : NaN;
     }
     return new Series(result, { dtype: float64, index: series.index });
+  }
+
+  private _applyCross(other: Series | DataFrame, fn: (a: number[], b: number[]) => number): Series | DataFrame {
+    if (this._obj instanceof Series && other instanceof Series) {
+      const n = this._obj.size;
+      const result = new Float64Array(n);
+      const half = this._center ? Math.floor(this._window / 2) : 0;
+      for (let i = 0; i < n; i++) {
+        const end = Math.min(n - 1, i + half);
+        const start = Math.max(0, end - this._window + 1);
+        const a: number[] = [], b: number[] = [];
+        for (let j = start; j <= end; j++) {
+          const va = this._obj.iloc(j);
+          const vb = other.iloc(j);
+          if (!isMissing(va) && !isMissing(vb)) {
+            a.push(Number(va));
+            b.push(Number(vb));
+          }
+        }
+        result[i] = a.length >= this._minPeriods ? fn(a, b) : NaN;
+      }
+      return new Series(result, { dtype: float64, index: (this._obj as Series).index });
+    }
+    // DataFrame case: apply column-wise
+    return this._apply(vals => vals.reduce((a, b) => a + b, 0) / vals.length);
   }
 }

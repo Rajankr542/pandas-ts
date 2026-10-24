@@ -1469,7 +1469,37 @@ export class Series {
 
   asfreq(freq: string): Series { return this.resample(freq as any).mean(); }
 
-  unstack(level = -1): Series { return this; }
+  unstack(level = -1): Series | any {
+    // If the index looks like MultiIndex tuples, pivot inner level to columns
+    if (this._index.length > 0 && Array.isArray(this._index[0])) {
+      const idx = this._index as unknown as unknown[][];
+      const lvl = level === -1 ? (idx[0]?.length ?? 2) - 1 : level;
+      const rowLevel = lvl === 0 ? 1 : 0;
+      const rowKeys = [...new Set(idx.map(t => t[rowLevel]))];
+      const colKeys = [...new Set(idx.map(t => t[lvl]))];
+      const colData: Record<string, unknown[]> = {};
+      for (const ck of colKeys) {
+        colData[String(ck)] = rowKeys.map(rk => {
+          const pos = idx.findIndex(t => t[rowLevel] === rk && t[lvl] === ck);
+          return pos === -1 ? null : this._getAt(pos);
+        });
+      }
+      // Return a lightweight DataFrame-shaped object (avoids circular import)
+      const rowKeysTyped = rowKeys as (string | number)[];
+      const dfLike: any = {
+        _columns: new Map(), _columnOrder: Object.keys(colData), _index: rowKeysTyped
+      };
+      for (const [k, v] of Object.entries(colData)) {
+        dfLike._columns.set(k, new Series(v as unknown[], { index: rowKeysTyped }));
+      }
+      dfLike.columns = Object.keys(colData);
+      dfLike.index = rowKeys;
+      dfLike.col = (name: string) => dfLike._columns.get(name);
+      dfLike.shape = [rowKeys.length, Object.keys(colData).length];
+      return dfLike;
+    }
+    return this;
+  }
 
   case_when(caselist: Array<[Series | boolean[], unknown]>): Series {
     const result: unknown[] = Array.from({ length: this.size }, (_, i) => this._getAt(i));
@@ -1484,10 +1514,76 @@ export class Series {
 
   // ── time series ──────────────────────────────────────────────────────────────
 
-  at_time(time: string): Series { return this; }
-  between_time(start_time: string, end_time: string): Series { return this; }
-  tz_convert(tz: string): Series { return this.copy(); }
-  tz_localize(tz: string | null): Series { return this.copy(); }
+  at_time(time: string): Series {
+    // Filter to rows whose Date index matches the given HH:MM time
+    const [hStr, mStr] = time.split(':');
+    const h = parseInt(hStr ?? '0', 10);
+    const m = parseInt(mStr ?? '0', 10);
+    const kept: number[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      const d = new Date(this._index[i] as string | number | Date);
+      if (!isNaN(d.getTime()) && d.getHours() === h && d.getMinutes() === m) kept.push(i);
+    }
+    return (this as any)._selectPositions(kept);
+  }
+
+  between_time(start_time: string, end_time: string): Series {
+    const toMins = (t: string) => {
+      const [h, m] = t.split(':').map(Number);
+      return (h ?? 0) * 60 + (m ?? 0);
+    };
+    const startMins = toMins(start_time);
+    const endMins = toMins(end_time);
+    const kept: number[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      const d = new Date(this._index[i] as string | number | Date);
+      if (!isNaN(d.getTime())) {
+        const mins = d.getHours() * 60 + d.getMinutes();
+        if (startMins <= endMins ? mins >= startMins && mins <= endMins : mins >= startMins || mins <= endMins) {
+          kept.push(i);
+        }
+      }
+    }
+    return (this as any)._selectPositions(kept);
+  }
+
+  tz_convert(tz: string): Series {
+    // JS Date is always UTC internally; convert display offset via Intl
+    const vals = Array.from({ length: this.size }, (_, i) => {
+      const v = this._getAt(i);
+      if (!(v instanceof Date)) return v;
+      try {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        });
+        const parts = Object.fromEntries(fmt.formatToParts(v).map(p => [p.type, p.value]));
+        return new Date(`${parts['year']}-${parts['month']}-${parts['day']}T${parts['hour']}:${parts['minute']}:${parts['second']}`);
+      } catch { return v; }
+    });
+    return new Series(vals, { index: this._index, name: this._name ?? undefined });
+  }
+
+  tz_localize(tz: string | null): Series {
+    // Attach a timezone offset to naive timestamps
+    if (tz === null) return this.copy();
+    const vals = Array.from({ length: this.size }, (_, i) => {
+      const v = this._getAt(i);
+      if (!(v instanceof Date)) return v;
+      try {
+        // Create a new Date representing the same wall-clock time in the given tz
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        });
+        const parts = Object.fromEntries(fmt.formatToParts(v).map(p => [p.type, p.value]));
+        const localStr = `${parts['year']}-${parts['month']}-${parts['day']}T${parts['hour']}:${parts['minute']}:${parts['second']}`;
+        const offset = v.getTime() - new Date(localStr).getTime();
+        return new Date(v.getTime() + offset);
+      } catch { return v; }
+    });
+    return new Series(vals, { index: this._index, name: this._name ?? undefined });
+  }
 
   // ── IO ───────────────────────────────────────────────────────────────────────
 

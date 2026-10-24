@@ -50,8 +50,16 @@ export class CategoricalAccessor {
   }
 
   reorder_categories(new_order: string[]): Series {
-    getState(this._series).categories = new_order;
-    return this._series;
+    const state = getState(this._series);
+    state.categories = [...new_order];
+    // Remap values to the new ordering (values not in new_order become null)
+    const vals = Array.from({ length: this._series.size }, (_, i) => {
+      const v = (this._series as any)._getAt(i);
+      if (isMissing(v)) return v;
+      const s = String(v);
+      return new_order.includes(s) ? s : null;
+    });
+    return new Series(vals, { index: this._series.index });
   }
 
   add_categories(new_cats: string[]): Series {
@@ -75,6 +83,19 @@ export class CategoricalAccessor {
     return this._series;
   }
 
-  as_ordered(): Series { return this._series; }
-  as_unordered(): Series { return this._series; }
+  as_ordered(): Series {
+    const state = getState(this._series);
+    const sorted = [...state.categories].sort();
+    const vals = Array.from({ length: this._series.size }, (_, i) => (this._series as any)._getAt(i));
+    const result = new Series(vals, { index: this._series.index });
+    _catState.set(result, { categories: sorted });
+    return result;
+  }
+
+  as_unordered(): Series {
+    const vals = Array.from({ length: this._series.size }, (_, i) => (this._series as any)._getAt(i));
+    const result = new Series(vals, { index: this._series.index });
+    _catState.set(result, { categories: [...getState(this._series).categories] });
+    return result;
+  }
 }

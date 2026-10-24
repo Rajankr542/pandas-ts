@@ -282,9 +282,24 @@ export class StringAccessor {
     });
   }
 
-  // ── Encode/decode (stub) ──────────────────────────────────────────────────────
-  encode(_encoding = 'utf-8'): Series { return this._map(s => Buffer.from(s, 'utf-8')); }
-  decode(_encoding = 'utf-8'): Series { return this._map(s => Buffer.isBuffer(s as any) ? (s as any).toString('utf-8') : s); }
+  encode(encoding = 'utf-8'): Series {
+    return this._map(s => {
+      const enc = encoding.toLowerCase().replace(/-/g, '') as BufferEncoding;
+      const supported: BufferEncoding[] = ['utf8', 'utf16le', 'latin1', 'ascii', 'base64', 'hex', 'binary'];
+      const bufEnc: BufferEncoding = (supported.includes(enc as BufferEncoding) ? enc : 'utf8') as BufferEncoding;
+      return Buffer.from(String(s), 'utf-8').toString(bufEnc === 'utf8' ? undefined : bufEnc);
+    });
+  }
+
+  decode(encoding = 'utf-8'): Series {
+    return this._map(s => {
+      const enc = encoding.toLowerCase().replace(/-/g, '') as BufferEncoding;
+      const supported: BufferEncoding[] = ['utf8', 'utf16le', 'latin1', 'ascii', 'base64', 'hex', 'binary'];
+      const bufEnc: BufferEncoding = (supported.includes(enc as BufferEncoding) ? enc : 'utf8') as BufferEncoding;
+      if (Buffer.isBuffer(s as any)) return (s as any).toString(bufEnc);
+      return Buffer.from(String(s), bufEnc).toString('utf-8');
+    });
+  }
 
   // ── Unicode normalize ─────────────────────────────────────────────────────────
   normalize(form: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' = 'NFC'): Series {

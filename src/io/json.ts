@@ -78,6 +78,17 @@ export function parseJson(text: string, options: ReadJsonOptions = {}): DataFram
       if (!Array.isArray(parsed)) throw new ValueError('orient=values expects a 2D array');
       return new DataFrame(parsed as unknown[][]);
     }
+    case 'table': {
+      // pandas Table Schema: { schema: { fields, primaryKey }, data: [...] }
+      const obj = parsed as { schema: { fields: Array<{ name: string; type: string }> }; data: Record<string, unknown>[] };
+      const cols = obj.schema?.fields?.map(f => f.name).filter(n => n !== 'index') ?? Object.keys(obj.data?.[0] ?? {});
+      const colObj: Record<string, unknown[]> = {};
+      for (const col of cols) colObj[col] = obj.data.map(row => row[col]);
+      const idx = obj.data.map(row => row['index'] ?? row['id']);
+      const df = new DataFrame(colObj);
+      if (idx.every(v => v !== undefined)) (df as any)._index = idx;
+      return df;
+    }
     default:
       throw new NotImplementedError(`orient='${orient}' not yet supported`);
   }
@@ -149,6 +160,25 @@ export function toJsonString(df: DataFrame, options: ToJsonOptions = {}): string
       const data = Array.from({ length: df.index.length }, (_, i) =>
         df.columns.map(col => serializeVal(getAt(col, i))));
       return JSON.stringify(data, null, indent);
+    }
+    case 'table': {
+      // pandas Table Schema format
+      const fields = df.columns.map(col => {
+        const dtype = df.col(col).dtype.name;
+        const pandasType = dtype === 'float64' || dtype === 'float32' ? 'number'
+          : dtype.startsWith('int') || dtype.startsWith('uint') ? 'integer'
+          : dtype === 'bool' ? 'boolean'
+          : dtype === 'datetime64' ? 'datetime'
+          : 'string';
+        return { name: col, type: pandasType };
+      });
+      const data = Array.from({ length: df.index.length }, (_, i) => {
+        const row: Record<string, unknown> = { index: df.index[i] };
+        for (const col of df.columns) row[col] = serializeVal(getAt(col, i));
+        return row;
+      });
+      const schema = { fields: [{ name: 'index', type: 'integer' }, ...fields], primaryKey: ['index'] };
+      return JSON.stringify({ schema, data }, null, indent);
     }
     default:
       throw new NotImplementedError(`orient='${orient}' not yet supported for to_json`);
