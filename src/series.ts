@@ -10,6 +10,9 @@ import { isMissing, NA } from './na.js';
 import { Rolling, RollingOptions } from './window/rolling.js';
 import { Expanding, ExpandingOptions } from './window/expanding.js';
 import { EWM, EWMOptions } from './window/ewm.js';
+import { StringAccessor } from './accessors/string_accessor.js';
+import { DatetimeAccessor } from './accessors/datetime_accessor.js';
+import { CategoricalAccessor } from './accessors/categorical_accessor.js';
 import { SeriesGroupBy } from './groupby/series_groupby.js';
 
 // Internal column data storage
@@ -74,6 +77,16 @@ export class Series {
   // ── Properties ──────────────────────────────────────────────────────────────
 
   get name(): string | null { return this._name; }
+
+  /** String accessor (.str) */
+  get str(): StringAccessor { return new StringAccessor(this); }
+
+  /** Datetime accessor (.dt) */
+  get dt(): DatetimeAccessor { return new DatetimeAccessor(this); }
+
+  /** Categorical accessor (.cat) */
+  get cat(): CategoricalAccessor { return new CategoricalAccessor(this); }
+
   get dtype(): DType { return this._dtype; }
   get shape(): [number] { return [this._data.length]; }
   get size(): number { return this._data.length; }
@@ -656,6 +669,160 @@ export class Series {
     return new SeriesGroupBy(this, by, options);
   }
 
+  // ── rank ─────────────────────────────────────────────────────────────────────
+  rank(method: 'average' | 'min' | 'max' | 'first' | 'dense' = 'average'): Series {
+    const vals = Array.from({ length: this.size }, (_, i) => ({ i, v: this._getAt(i) }));
+    const nonMissing = vals.filter(x => !isMissing(x.v)).map(x => ({ ...x, v: Number(x.v) }));
+    const sorted = [...nonMissing].sort((a, b) => (a.v as number) - (b.v as number));
+    const ranks = new Map<number, number>();
+    const result = new Float64Array(this.size).fill(NaN);
+
+    for (let i = 0; i < sorted.length; ) {
+      const val = sorted[i]!.v as number;
+      let j = i;
+      while (j < sorted.length && (sorted[j]!.v as number) === val) j++;
+      for (let k = i; k < j; k++) {
+        let rank: number;
+        if (method === 'min') rank = i + 1;
+        else if (method === 'max') rank = j;
+        else if (method === 'first') rank = k + 1;
+        else if (method === 'dense') rank = ranks.size + 1;
+        else rank = (i + j + 1) / 2;
+        result[sorted[k]!.i] = rank;
+      }
+      if (!ranks.has(i)) ranks.set(i, ranks.size);
+      i = j;
+    }
+    return new Series(result, { dtype: float64, name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── diff ─────────────────────────────────────────────────────────────────────
+  diff(periods = 1): Series {
+    const result = new Float64Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      if (i < periods) { result[i] = NaN; continue; }
+      const curr = Number(this._getAt(i));
+      const prev = Number(this._getAt(i - periods));
+      result[i] = curr - prev;
+    }
+    return new Series(result, { dtype: float64, name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── pct_change ───────────────────────────────────────────────────────────────
+  pct_change(periods = 1): Series {
+    const result = new Float64Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      if (i < periods) { result[i] = NaN; continue; }
+      const curr = Number(this._getAt(i));
+      const prev = Number(this._getAt(i - periods));
+      result[i] = prev !== 0 ? (curr - prev) / Math.abs(prev) : NaN;
+    }
+    return new Series(result, { dtype: float64, name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── shift ─────────────────────────────────────────────────────────────────────
+  shift(periods = 1): Series {
+    const result: unknown[] = new Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      const srcI = i - periods;
+      result[i] = srcI >= 0 && srcI < this.size ? this._getAt(srcI) : NaN;
+    }
+    return new Series(result, { name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── quantile ─────────────────────────────────────────────────────────────────
+  quantile(q = 0.5): number {
+    const sorted = this.dropna().sort_values();
+    if (sorted.size === 0) return NaN;
+    const idx = q * (sorted.size - 1);
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if (lo === hi) return Number(sorted.iloc(lo));
+    return Number(sorted.iloc(lo)) * (hi - idx) + Number(sorted.iloc(hi)) * (idx - lo);
+  }
+
+  // ── nlargest / nsmallest ─────────────────────────────────────────────────────
+  nlargest(n: number): Series { return this.sort_values({ ascending: false }).head(n); }
+  nsmallest(n: number): Series { return this.sort_values({ ascending: true }).head(n); }
+
+  // ── duplicated / drop_duplicates ──────────────────────────────────────────────
+  duplicated(keep: 'first' | 'last' | false = 'first'): Series {
+    const seen = new Map<unknown, number>();
+    const result = new Uint8Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (seen.has(v)) {
+        if (keep === 'first') result[i] = 1;
+        else if (keep === 'last') result[seen.get(v)!] = 1;
+        else { result[i] = 1; result[seen.get(v)!] = 1; }
+      } else { seen.set(v, i); }
+    }
+    return new Series(result, { dtype: bool_, name: this._name ?? undefined, index: this._index });
+  }
+
+  drop_duplicates(keep: 'first' | 'last' | false = 'first'): Series {
+    const dupes = this.duplicated(keep);
+    const positions: number[] = [];
+    for (let i = 0; i < dupes.size; i++) {
+      if (!dupes.iloc(i)) positions.push(i);
+    }
+    return this._selectPositions(positions);
+  }
+
+  // ── sample ───────────────────────────────────────────────────────────────────
+  sample(n = 1, replace = false): Series {
+    const available = Array.from({ length: this.size }, (_, i) => i);
+    const positions: number[] = [];
+    const count = Math.min(n, replace ? n : this.size);
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(Math.random() * available.length);
+      positions.push(available[idx]!);
+      if (!replace) available.splice(idx, 1);
+    }
+    return this._selectPositions(positions.sort((a, b) => a - b));
+  }
+
+  // ── interpolate ───────────────────────────────────────────────────────────────
+  interpolate(method: 'linear' | 'pad' | 'backfill' = 'linear'): Series {
+    const vals: number[] = Array.from({ length: this.size }, (_, i) => Number(this._getAt(i)));
+    if (method === 'linear') {
+      for (let i = 1; i < vals.length - 1; i++) {
+        if (isNaN(vals[i]!)) {
+          let lo = i - 1, hi = i + 1;
+          while (hi < vals.length && isNaN(vals[hi]!)) hi++;
+          if (!isNaN(vals[lo]!) && hi < vals.length && !isNaN(vals[hi]!)) {
+            vals[i] = vals[lo]! + (vals[hi]! - vals[lo]!) * (i - lo) / (hi - lo);
+          }
+        }
+      }
+    }
+    return new Series(new Float64Array(vals), { dtype: float64, name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── pipe ─────────────────────────────────────────────────────────────────────
+  pipe(fn: (s: Series) => Series): Series { return fn(this); }
+
+  // ── where ────────────────────────────────────────────────────────────────────
+  where(cond: Series, other: unknown = NaN): Series {
+    const result: unknown[] = new Array(this.size);
+    for (let i = 0; i < this.size; i++) {
+      const c = cond.iloc(i);
+      result[i] = c ? this._getAt(i) : other;
+    }
+    return new Series(result, { name: this._name ?? undefined, index: this._index });
+  }
+
+  // ── searchsorted ─────────────────────────────────────────────────────────────
+  searchsorted(value: number, side: 'left' | 'right' = 'left'): number {
+    let lo = 0, hi = this.size;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      const v = Number(this._getAt(mid));
+      if (side === 'left' ? v < value : v <= value) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  }
+
   // ── Internal access (for DataFrame) ──────────────────────────────────────────
 
   _getDataArray(): ColumnData { return this._data; }
@@ -705,6 +872,21 @@ function coerceToTypedArray(data: unknown[], dtype: DType): { typedData: ColumnD
   const mask = hasMissing ? new Uint8Array(n) : null;
 
   if (dtype.kind === 'string' || dtype.kind === 'object') {
+    // Check if any value is a non-string, non-primitive object — preserve as-is
+    const hasComplexObjects = data.some(v => !isMissing(v) && typeof v === 'object' && typeof v !== 'string');
+    if (hasComplexObjects) {
+      const arr: unknown[] = new Array(n);
+      for (let i = 0; i < n; i++) {
+        const v = data[i];
+        if (isMissing(v)) {
+          arr[i] = null;
+          if (mask) mask[i] = 1;
+        } else {
+          arr[i] = v;
+        }
+      }
+      return { typedData: arr, naMask: mask };
+    }
     const arr: string[] = new Array(n);
     for (let i = 0; i < n; i++) {
       const v = data[i];

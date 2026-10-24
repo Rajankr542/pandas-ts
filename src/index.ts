@@ -53,3 +53,8 @@ export {
   read_parquet, to_parquet,
   read_excel, to_excel,
 } from './io/index.js';
+
+// Accessors
+export { StringAccessor } from './accessors/string_accessor.js';
+export { DatetimeAccessor } from './accessors/datetime_accessor.js';
+export { CategoricalAccessor } from './accessors/categorical_accessor.js';

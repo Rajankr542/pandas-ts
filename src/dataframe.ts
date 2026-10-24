@@ -679,5 +679,411 @@ export class DataFrame {
     }
     return result;
   }
+
+  // ── pipe ──────────────────────────────────────────────────────────────────────
+  pipe(fn: (df: DataFrame, ...args: unknown[]) => DataFrame, ...args: unknown[]): DataFrame {
+    return fn(this, ...args);
+  }
+
+  // ── where / mask ──────────────────────────────────────────────────────────────
+  where(cond: DataFrame, other: unknown = NaN): DataFrame {
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const vals = Array.from({ length: this._index.length }, (_, i) => {
+        const condVal = cond.columns.includes(col) ? (cond._columns.get(col) as Series)._getAt(i) : 1;
+        return condVal ? (this._columns.get(col) as Series)._getAt(i) : other;
+      });
+      df._columns.set(col, new Series(vals, { name: col, index: df._index }));
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
+
+  mask(cond: DataFrame, other: unknown = NaN): DataFrame {
+    const invertedCond = cond.applymap(v => v ? 0 : 1) as DataFrame;
+    return this.where(invertedCond, other);
+  }
+
+  // ── diff ─────────────────────────────────────────────────────────────────────
+  diff(periods = 1, axis = 0): DataFrame {
+    if (axis !== 0) throw new NotImplementedError('diff(axis=1) not implemented');
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const vals = Array.from({ length: this._index.length }, (_, i) => {
+        if (i < periods) return NaN;
+        const curr = Number((this._columns.get(col) as Series)._getAt(i));
+        const prev = Number((this._columns.get(col) as Series)._getAt(i - periods));
+        return curr - prev;
+      });
+      df._columns.set(col, new Series(vals, { name: col, index: df._index }));
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
+
+  // ── pct_change ───────────────────────────────────────────────────────────────
+  pct_change(periods = 1): DataFrame {
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const vals = Array.from({ length: this._index.length }, (_, i) => {
+        if (i < periods) return NaN;
+        const curr = Number((this._columns.get(col) as Series)._getAt(i));
+        const prev = Number((this._columns.get(col) as Series)._getAt(i - periods));
+        return prev !== 0 ? (curr - prev) / Math.abs(prev) : NaN;
+      });
+      df._columns.set(col, new Series(vals, { name: col, index: df._index }));
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
+
+  // ── shift ─────────────────────────────────────────────────────────────────────
+  shift(periods = 1): DataFrame {
+    const df = new DataFrame();
+    df._index = [...this._index];
+    for (const col of this._columnOrder) {
+      const vals = Array.from({ length: this._index.length }, (_, i) => {
+        const srcI = i - periods;
+        if (srcI < 0 || srcI >= this._index.length) return NaN;
+        return (this._columns.get(col) as Series)._getAt(srcI);
+      });
+      df._columns.set(col, new Series(vals, { name: col, index: df._index }));
+      df._columnOrder.push(col);
+    }
+    return df;
+  }
+
+  // ── cumsum / cumprod / cummax / cummin ───────────────────────────────────────
+  cumsum(): DataFrame { return this._applyToAll(s => s.cumsum()); }
+  cumprod(): DataFrame { return this._applyToAll(s => s.cumprod()); }
+  cummax(): DataFrame { return this._applyToAll(s => s.cummax()); }
+  cummin(): DataFrame { return this._applyToAll(s => s.cummin()); }
+
+  // ── abs ───────────────────────────────────────────────────────────────────────
+  abs(): DataFrame { return this._applyToAll(s => s.abs()); }
+
+  // ── round ─────────────────────────────────────────────────────────────────────
+  round(decimals = 0): DataFrame {
+    return this._applyToAll(s => s.apply(v => typeof v === 'number' ? Math.round(v * 10**decimals) / 10**decimals : v));
+  }
+
+  // ── clip ─────────────────────────────────────────────────────────────────────
+  clip(lower?: number, upper?: number): DataFrame {
+    return this._applyToAll(s => s.clip(lower, upper));
+  }
+
+  // ── rank ─────────────────────────────────────────────────────────────────────
+  rank(method: 'average' | 'min' | 'max' | 'first' | 'dense' = 'average'): DataFrame {
+    return this._applyToAll(s => s.rank(method));
+  }
+
+  // ── nunique ───────────────────────────────────────────────────────────────────
+  nunique(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const col of this._columnOrder) result[col] = this._columns.get(col)!.nunique();
+    return result;
+  }
+
+  // ── value_counts ──────────────────────────────────────────────────────────────
+  value_counts(subset?: string[]): Series {
+    const cols = subset ?? this._columnOrder;
+    const counts = new Map<string, number>();
+    for (let i = 0; i < this._index.length; i++) {
+      const key = cols.map(c => String((this._columns.get(c) as Series)._getAt(i))).join('|');
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    return new Series(sorted.map(([, v]) => v), { index: sorted.map(([k]) => k) });
+  }
+
+  // ── pivot ─────────────────────────────────────────────────────────────────────
+  pivot(options: { index: string; columns: string; values: string }): DataFrame {
+    const { index, columns, values } = options;
+    const rowKeys = [...new Set(Array.from({ length: this._index.length }, (_, i) =>
+      String((this._columns.get(index) as Series)._getAt(i))))];
+    const colKeys = [...new Set(Array.from({ length: this._index.length }, (_, i) =>
+      String((this._columns.get(columns) as Series)._getAt(i))))];
+
+    const data: Record<string, unknown[]> = {};
+    for (const ck of colKeys) data[ck] = new Array(rowKeys.length).fill(NaN);
+
+    for (let i = 0; i < this._index.length; i++) {
+      const rowKey = String((this._columns.get(index) as Series)._getAt(i));
+      const colKey = String((this._columns.get(columns) as Series)._getAt(i));
+      const val = (this._columns.get(values) as Series)._getAt(i);
+      const rowIdx = rowKeys.indexOf(rowKey);
+      data[colKey]![rowIdx] = val;
+    }
+
+    return new DataFrame(data, { index: rowKeys });
+  }
+
+  // ── pivot_table ───────────────────────────────────────────────────────────────
+  pivot_table(options: {
+    values?: string | string[];
+    index: string | string[];
+    columns?: string;
+    aggfunc?: string;
+    fill_value?: unknown;
+  }): DataFrame {
+    const indexCols = Array.isArray(options.index) ? options.index : [options.index];
+    const aggfunc = options.aggfunc ?? 'mean';
+    const valueCols = Array.isArray(options.values)
+      ? options.values
+      : options.values
+        ? [options.values]
+        : this._columnOrder.filter(c => !indexCols.includes(c));
+    return this.groupby(indexCols).agg(
+      Object.fromEntries(valueCols.map(col => [col, aggfunc]))
+    );
+  }
+
+  // ── melt ─────────────────────────────────────────────────────────────────────
+  melt(options: {
+    id_vars?: string | string[];
+    value_vars?: string | string[];
+    var_name?: string;
+    value_name?: string;
+  } = {}): DataFrame {
+    const idVars = options.id_vars ? (Array.isArray(options.id_vars) ? options.id_vars : [options.id_vars]) : [];
+    const valueVars = options.value_vars
+      ? (Array.isArray(options.value_vars) ? options.value_vars : [options.value_vars])
+      : this._columnOrder.filter(c => !idVars.includes(c));
+    const varName = options.var_name ?? 'variable';
+    const valueName = options.value_name ?? 'value';
+
+    const rows: Record<string, unknown>[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      for (const valCol of valueVars) {
+        const row: Record<string, unknown> = {};
+        for (const idCol of idVars) row[idCol] = (this._columns.get(idCol) as Series)._getAt(i);
+        row[varName] = valCol;
+        row[valueName] = (this._columns.get(valCol) as Series)._getAt(i);
+        rows.push(row);
+      }
+    }
+    return new DataFrame(rows);
+  }
+
+  // ── stack / unstack ───────────────────────────────────────────────────────────
+  stack(): Series {
+    const vals: unknown[] = [];
+    const idx: string[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      for (const col of this._columnOrder) {
+        vals.push((this._columns.get(col) as Series)._getAt(i));
+        idx.push(`${this._index[i]}-${col}`);
+      }
+    }
+    return new Series(vals, { index: idx });
+  }
+
+  // ── corr / cov ────────────────────────────────────────────────────────────────
+  corr(): DataFrame {
+    const numCols = this._columnOrder.filter(c => {
+      const kind = this._columns.get(c)!.dtype.kind;
+      return kind === 'float' || kind === 'int';
+    });
+    const data: Record<string, unknown[]> = {};
+    for (const c1 of numCols) {
+      data[c1] = [];
+      for (const c2 of numCols) {
+        (data[c1] as unknown[]).push(this._pearsonCorr(this._columns.get(c1)!, this._columns.get(c2)!));
+      }
+    }
+    return new DataFrame(data, { index: numCols });
+  }
+
+  cov(): DataFrame {
+    const numCols = this._columnOrder.filter(c => {
+      const kind = this._columns.get(c)!.dtype.kind;
+      return kind === 'float' || kind === 'int';
+    });
+    const data: Record<string, unknown[]> = {};
+    for (const c1 of numCols) {
+      data[c1] = [];
+      for (const c2 of numCols) {
+        (data[c1] as unknown[]).push(this._cov(this._columns.get(c1)!, this._columns.get(c2)!));
+      }
+    }
+    return new DataFrame(data, { index: numCols });
+  }
+
+  private _pearsonCorr(a: Series, b: Series): number {
+    const meanA = a.mean(), meanB = b.mean();
+    let num = 0, denomA = 0, denomB = 0;
+    for (let i = 0; i < a.size; i++) {
+      const da = Number(a.iloc(i)) - meanA;
+      const db = Number(b.iloc(i)) - meanB;
+      num += da * db; denomA += da * da; denomB += db * db;
+    }
+    return num / Math.sqrt(denomA * denomB);
+  }
+
+  private _cov(a: Series, b: Series): number {
+    const meanA = a.mean(), meanB = b.mean();
+    let sum = 0, n = 0;
+    for (let i = 0; i < a.size; i++) {
+      sum += (Number(a.iloc(i)) - meanA) * (Number(b.iloc(i)) - meanB);
+      n++;
+    }
+    return n > 1 ? sum / (n - 1) : NaN;
+  }
+
+  // ── quantile ─────────────────────────────────────────────────────────────────
+  quantile(q = 0.5): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const col of this._columnOrder) {
+      const s = this._columns.get(col)!;
+      const d = s.describe();
+      if (q === 0.25) result[col] = d['25%']!;
+      else if (q === 0.5) result[col] = d['50%']!;
+      else if (q === 0.75) result[col] = d['75%']!;
+      else {
+        const sorted = s.dropna().sort_values();
+        const idx = q * (sorted.size - 1);
+        const lo = Math.floor(idx), hi = Math.ceil(idx);
+        result[col] = lo === hi ? Number(sorted.iloc(lo))
+          : Number(sorted.iloc(lo)) * (hi - idx) + Number(sorted.iloc(hi)) * (idx - lo);
+      }
+    }
+    return result;
+  }
+
+  // ── idxmin / idxmax ──────────────────────────────────────────────────────────
+  idxmin(): Record<string, string | number> {
+    const result: Record<string, string | number> = {};
+    for (const col of this._columnOrder) {
+      let minVal = Infinity, minIdx: string | number = this._index[0]!;
+      for (let i = 0; i < this._index.length; i++) {
+        const v = Number((this._columns.get(col) as Series)._getAt(i));
+        if (v < minVal) { minVal = v; minIdx = this._index[i]!; }
+      }
+      result[col] = minIdx;
+    }
+    return result;
+  }
+
+  idxmax(): Record<string, string | number> {
+    const result: Record<string, string | number> = {};
+    for (const col of this._columnOrder) {
+      let maxVal = -Infinity, maxIdx: string | number = this._index[0]!;
+      for (let i = 0; i < this._index.length; i++) {
+        const v = Number((this._columns.get(col) as Series)._getAt(i));
+        if (v > maxVal) { maxVal = v; maxIdx = this._index[i]!; }
+      }
+      result[col] = maxIdx;
+    }
+    return result;
+  }
+
+  // ── any / all ─────────────────────────────────────────────────────────────────
+  any(_axis = 0): Record<string, boolean> {
+    const result: Record<string, boolean> = {};
+    for (const col of this._columnOrder) {
+      let found = false;
+      for (let i = 0; i < this._index.length; i++) {
+        if ((this._columns.get(col) as Series)._getAt(i)) { found = true; break; }
+      }
+      result[col] = found;
+    }
+    return result;
+  }
+
+  all(_axis = 0): Record<string, boolean> {
+    const result: Record<string, boolean> = {};
+    for (const col of this._columnOrder) {
+      let allTrue = true;
+      for (let i = 0; i < this._index.length; i++) {
+        if (!(this._columns.get(col) as Series)._getAt(i)) { allTrue = false; break; }
+      }
+      result[col] = allTrue;
+    }
+    return result;
+  }
+
+  // ── first_valid_index ─────────────────────────────────────────────────────────
+  first_valid_index(): string | number | null {
+    for (let i = 0; i < this._index.length; i++) {
+      for (const col of this._columnOrder) {
+        if (!isMissing((this._columns.get(col) as Series)._getAt(i))) return this._index[i]!;
+      }
+    }
+    return null;
+  }
+
+  // ── sample ───────────────────────────────────────────────────────────────────
+  sample(n?: number, frac?: number, replace = false): DataFrame {
+    const nRows = this._index.length;
+    let count = n ?? (frac !== undefined ? Math.floor(frac * nRows) : 1);
+    count = Math.min(count, replace ? count : nRows);
+    const positions: number[] = [];
+    const available = Array.from({ length: nRows }, (_, i) => i);
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(Math.random() * available.length);
+      positions.push(available[idx]!);
+      if (!replace) available.splice(idx, 1);
+    }
+    return this._selectRowPositions(positions.sort((a, b) => a - b));
+  }
+
+  // ── nlargest / nsmallest ──────────────────────────────────────────────────────
+  nlargest(n: number, columns: string | string[]): DataFrame {
+    const cols = Array.isArray(columns) ? columns : [columns];
+    return this.sort_values(cols, { ascending: false }).head(n);
+  }
+
+  nsmallest(n: number, columns: string | string[]): DataFrame {
+    const cols = Array.isArray(columns) ? columns : [columns];
+    return this.sort_values(cols, { ascending: true }).head(n);
+  }
+
+  // ── duplicated / drop_duplicates ──────────────────────────────────────────────
+  duplicated(subset?: string[], keep: 'first' | 'last' | false = 'first'): Series {
+    const cols = subset ?? this._columnOrder;
+    const seen = new Map<string, number>();
+    const result = new Uint8Array(this._index.length);
+    for (let i = 0; i < this._index.length; i++) {
+      const key = cols.map(c => String((this._columns.get(c) as Series)._getAt(i))).join('|');
+      if (seen.has(key)) {
+        if (keep === 'first') result[i] = 1;
+        else if (keep === 'last') result[seen.get(key)!] = 1;
+        else { result[i] = 1; result[seen.get(key)!] = 1; }
+      } else {
+        seen.set(key, i);
+      }
+    }
+    return new Series(result, { index: this._index });
+  }
+
+  drop_duplicates(subset?: string[], keep: 'first' | 'last' | false = 'first'): DataFrame {
+    const dupes = this.duplicated(subset, keep);
+    const keepPos: number[] = [];
+    for (let i = 0; i < dupes.size; i++) {
+      if (!dupes.iloc(i)) keepPos.push(i);
+    }
+    return this._selectRowPositions(keepPos);
+  }
+
+  // ── interpolate ───────────────────────────────────────────────────────────────
+  interpolate(method: 'linear' | 'pad' | 'backfill' = 'linear'): DataFrame {
+    return this._applyToAll(s => {
+      if (method === 'pad' || method === 'backfill') return s.fillna(NaN) as Series;
+      const vals: number[] = Array.from({ length: s.size }, (_, i) => Number(s.iloc(i)));
+      for (let i = 1; i < vals.length - 1; i++) {
+        if (isNaN(vals[i]!)) {
+          let lo = i - 1, hi = i + 1;
+          while (hi < vals.length && isNaN(vals[hi]!)) hi++;
+          if (!isNaN(vals[lo]!) && hi < vals.length && !isNaN(vals[hi]!)) {
+            vals[i] = vals[lo]! + (vals[hi]! - vals[lo]!) * (i - lo) / (hi - lo);
+          }
+        }
+      }
+      return new Series(new Float64Array(vals), { index: s.index });
+    });
+  }
 }
 
