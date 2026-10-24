@@ -15,6 +15,7 @@ import { StringAccessor } from './accessors/string_accessor.js';
 import { DatetimeAccessor } from './accessors/datetime_accessor.js';
 import { CategoricalAccessor } from './accessors/categorical_accessor.js';
 import { SeriesGroupBy } from './groupby/series_groupby.js';
+import * as _np from '@cyfora/numera';
 
 // Internal column data storage
 type ColumnData = Float64Array | Float32Array | Int32Array | Int16Array | Int8Array |
@@ -991,6 +992,145 @@ export class Series {
     return sum;
   }
 
+  // ── numera-powered statistics ────────────────────────────────────────────────
+
+  /** np.histogram equivalent */
+  hist(bins: number = 10, options: { range?: [number, number]; density?: boolean } = {}): { hist: number[]; edges: number[] } {
+    const f64 = _toF64(this);
+    const valid = f64.filter(v => !isNaN(v));
+    const nd = _np.fromTypedArray(valid);
+    const opts: _np.HistogramOptions = {};
+    if (options.range) opts.range = options.range;
+    if (options.density) opts.density = options.density;
+    const result = _np.histogram(nd, bins, opts);
+    return { hist: result.hist.toArray() as number[], edges: result.edges.toArray() as number[] };
+  }
+
+  /** numpy.gradient — numerical gradient */
+  gradient(edge_order = 1): Series {
+    const f64 = _toF64(this);
+    const nd = _np.fromTypedArray(f64);
+    const result = _np.gradient(nd, { edgeOrder: edge_order });
+    const arr = (Array.isArray(result) ? result[0]! : result).toArray() as number[];
+    return new Series(arr, { index: this._index, name: this._name ?? undefined });
+  }
+
+  /** numpy.convolve-based convolution */
+  convolve(other: number[] | Series, mode: 'full' | 'valid' | 'same' = 'full'): Series {
+    const a = _np.fromTypedArray(_toF64(this));
+    const b = other instanceof Series
+      ? _np.fromTypedArray(_toF64(other as Series))
+      : _np.fromTypedArray(new Float64Array(other));
+    const result = _np.convolve(a, b, mode);
+    return new Series(result.toArray() as number[], { name: this._name ?? undefined });
+  }
+
+  /** Pearson correlation using numera corrcoef */
+  corrWithNumera(other: Series): number {
+    const a = _toF64(this);
+    const b = _toF64(other as any);
+    const stacked = new Float64Array(a.length + b.length);
+    stacked.set(a, 0);
+    stacked.set(b, a.length);
+    const m = _np.fromTypedArray(stacked).reshape([2, a.length]);
+    const r = _np.corrcoef(m);
+    return ((r.toArray() as number[][])[0]!)[1]!;
+  }
+
+  /** Covariance using numera */
+  covWithNumera(other: Series): number {
+    const a = _toF64(this);
+    const b = _toF64(other as any);
+    const stacked = new Float64Array(a.length + b.length);
+    stacked.set(a, 0);
+    stacked.set(b, a.length);
+    const m = _np.fromTypedArray(stacked).reshape([2, a.length]);
+    const r = _np.cov(m);
+    return ((r.toArray() as number[][])[0]!)[1]!;
+  }
+
+  /** numpy.diff — n-th discrete difference (prepends NaNs to preserve index length) */
+  ndiff(n = 1): Series {
+    const f64 = _toF64(this);
+    const result = _np.diff(_np.fromTypedArray(f64), n);
+    const arr = result.toArray() as number[];
+    const out = new Array(n).fill(NaN).concat(arr);
+    return new Series(out, { index: this._index, name: this._name ?? undefined });
+  }
+
+  /** Percentile (0–100 scale) */
+  percentile(q: number, options: { method?: _np.QuantileMethod } = {}): number {
+    const f64 = _toF64(this).filter(v => !isNaN(v));
+    const result = _np.percentile(_np.fromTypedArray(f64), [q], options.method ? { method: options.method } : {});
+    return result.item() as number;
+  }
+
+  /** numpy.searchsorted */
+  searchsortedNumera(value: number | number[], side: 'left' | 'right' = 'left'): number | number[] {
+    const sorted = _np.fromTypedArray(_toF64(this));
+    const vals = Array.isArray(value) ? value : [value];
+    const result = _np.searchsorted(sorted, _np.fromTypedArray(new Float64Array(vals)), { side });
+    const arr = result.toArray() as number[];
+    return Array.isArray(value) ? arr : arr[0]!;
+  }
+
+  /** numpy.interp — one-dimensional linear interpolation */
+  interp(xp: number[], fp: number[]): Series {
+    const x = _toF64(this);
+    const result = _np.interp(_np.fromTypedArray(x), _np.fromTypedArray(new Float64Array(xp)), _np.fromTypedArray(new Float64Array(fp)));
+    return new Series(result.toArray() as number[], { index: this._index, name: this._name ?? undefined });
+  }
+
+  /** Weighted average using numera */
+  average(weights?: number[] | Series): number {
+    const f64 = _toF64(this);
+    const nd = _np.fromTypedArray(f64);
+    if (!weights) return _np.nanmean(nd).item() as number;
+    const w = weights instanceof Series ? _toF64(weights as any) : new Float64Array(weights);
+    return (_np.average(nd, { weights: _np.fromTypedArray(w) }) as _np.NDArray).item() as number;
+  }
+
+  /** numpy.argsort — returns positions that would sort the array */
+  argsortPositions(options: { ascending?: boolean; kind?: string } = {}): number[] {
+    const f64 = _toF64(this);
+    const opts: _np.SortOptions = {};
+    if (options.kind) opts.kind = options.kind;
+    if (options.ascending === false) opts.descending = true;
+    const result = _np.argsort(_np.fromTypedArray(f64), opts);
+    return result.toArray() as number[];
+  }
+
+  /** numpy.unique with counts */
+  uniqueWithCounts(): { values: unknown[]; counts: number[]; indices: number[] } {
+    const vals = this.unique();
+    const counts = vals.map(v => {
+      let c = 0;
+      for (let i = 0; i < this.size; i++) if (this._getAt(i) === v) c++;
+      return c;
+    });
+    return { values: vals, counts, indices: vals.map(v => this._index[this.to_list().indexOf(v)] as number) };
+  }
+
+  /** np.linalg.norm — vector norm */
+  norm(ord: number = 2): number {
+    const f64 = _toF64(this).filter(v => !isNaN(v));
+    return _np.linalg.norm(_np.fromTypedArray(f64), { ord }).item() as number;
+  }
+
+  /** Cumulative product using numera */
+  cumprodNumera(): Series {
+    const f64 = _toF64(this);
+    const result = _np.cumprod(_np.fromTypedArray(f64));
+    return new Series(result.toArray() as number[], { index: this._index, name: this._name ?? undefined });
+  }
+
+  /** Cumulative sum using numera */
+  cumsumNumera(): Series {
+    const f64 = _toF64(this);
+    const result = _np.cumsum(_np.fromTypedArray(f64));
+    return new Series(result.toArray() as number[], { index: this._index, name: this._name ?? undefined });
+  }
+
   // ── Aggregation ─────────────────────────────────────────────────────────────
 
   agg(func: string | string[] | ((s: Series) => unknown)): unknown {
@@ -1390,6 +1530,18 @@ export class Series {
     return `\\begin{tabular}{lr}\n\\hline\n${rows.join('\n')}\n\\hline\n\\end{tabular}`;
   }
 
+}
+
+// ── numera helpers ────────────────────────────────────────────────────────────
+
+/** @internal convert Series to Float64Array, replacing NA with NaN */
+function _toF64(s: { size: number; _getAt(i: number): unknown }): Float64Array {
+  const out = new Float64Array(s.size);
+  for (let i = 0; i < s.size; i++) {
+    const v = s._getAt(i);
+    out[i] = (v === null || v === undefined || (typeof v === 'number' && isNaN(v as number))) ? NaN : Number(v);
+  }
+  return out;
 }
 
 // ── Dtype inference helpers ───────────────────────────────────────────────────

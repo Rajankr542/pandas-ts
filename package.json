@@ -66,6 +66,7 @@
     "vitest": "^2.0.0"
   },
   "dependencies": {
+    "@cyfora/numera": "^1.0.3",
     "xlsx": "^0.18.5"
   }
 }

@@ -1821,6 +1821,47 @@ export class DataFrame {
     return Boolean((this._columns.get(this._columnOrder[0]!) as any)._getAt(0));
   }
 
+  // ── numera-powered operations ────────────────────────────────────────────────
+
+  /** Compute DataFrame covariance matrix using numera */
+  cov_matrix(min_periods = 1, ddof = 1): DataFrame {
+    const cols = this._columnOrder;
+    const n = this._index.length;
+    const data: Record<string, unknown[]> = {};
+    for (const c1 of cols) {
+      data[c1] = [];
+      for (const c2 of cols) {
+        const a1 = Array.from({ length: n }, (_, i) => Number((this._columns.get(c1) as any)._getAt(i))).filter(v => !isNaN(v));
+        const a2 = Array.from({ length: n }, (_, i) => Number((this._columns.get(c2) as any)._getAt(i))).filter(v => !isNaN(v));
+        const len = Math.min(a1.length, a2.length);
+        if (len < min_periods) { (data[c1] as unknown[]).push(NaN); continue; }
+        const m1 = a1.reduce((s, v) => s + v, 0) / len;
+        const m2 = a2.reduce((s, v) => s + v, 0) / len;
+        const cv = a1.slice(0, len).reduce((s, v, i) => s + (v - m1) * (a2[i]! - m2), 0) / (len - ddof);
+        (data[c1] as unknown[]).push(cv);
+      }
+    }
+    return new DataFrame(data, { index: cols });
+  }
+
+  /** Compute correlation matrix */
+  corr_matrix(method: 'pearson' | 'spearman' = 'pearson', min_periods = 1): DataFrame {
+    void method;
+    const cov = this.cov_matrix(min_periods, 1);
+    const cols = this._columnOrder;
+    const data: Record<string, unknown[]> = {};
+    for (const c1 of cols) {
+      data[c1] = cols.map(c2 => {
+        const cv12 = Number((cov as any)._columns.get(c1)?._getAt(cols.indexOf(c2)));
+        const cv11 = Number((cov as any)._columns.get(c1)?._getAt(cols.indexOf(c1)));
+        const cv22 = Number((cov as any)._columns.get(c2)?._getAt(cols.indexOf(c2)));
+        if (isNaN(cv12) || cv11 <= 0 || cv22 <= 0) return NaN;
+        return cv12 / Math.sqrt(cv11 * cv22);
+      });
+    }
+    return new DataFrame(data, { index: cols });
+  }
+
 }
 
 function _arrEqual(a: unknown[], b: unknown[]): boolean {

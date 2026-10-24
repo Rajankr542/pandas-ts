@@ -99,3 +99,19 @@ export { MultiIndex } from './index_types/multi_index.js';
 // Resample
 export { DataFrameResampler, SeriesResampler } from './resample/resample.js';
 export type { ResampleFreq, ResampleOptions } from './resample/resample.js';
+
+// tseries.offsets
+export * from './offsets.js';
+export { offsets } from './offsets.js';
+
+// pd.testing
+export { testing, assert_series_equal, assert_frame_equal, assert_index_equal, assert_numpy_array_equal, AssertionError } from './testing.js';
+
+// pd.eval
+export { pdEval as eval, pdEval, evalDataFrame } from './eval.js';
+
+// pd.infer_freq
+export { infer_freq } from './infer_freq.js';
+
+// top-level pivot_table and melt
+export { pivot_table as pivot_table_fn, melt as melt_fn } from './pivot_table.js';
