@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![platform](https://img.shields.io/badge/platform-Node.js%20%7C%20TypeScript-blue)
-[![pandas api coverage](https://img.shields.io/badge/pandas_api_coverage-~99%25-brightgreen)](https://pandas-ts.cyfora.in)
+[![pandas api coverage](https://img.shields.io/badge/pandas_api_coverage-~95%25-brightgreen)](https://pandas-ts.cyfora.in)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/rajankr542)
 
 <a href="https://cyfora.in">
@@ -16,9 +16,9 @@
 
 **pandas for TypeScript & JavaScript, powered by a C++ core.**
 
-- **📊 Broad API**: ~99% pandas parity — Series (152+ methods), DataFrame (134+ methods), GroupBy, Rolling, Resample, IO and tseries
+- **📊 Broad API**: ~95% pandas parity — Series (160+ methods), DataFrame (145+ methods), GroupBy, Rolling, Resample, IO and tseries
 - **⚙️ Backed by @cyfora/numera**: math-heavy operations (hist, quantile, corrcoef, linalg.norm, gradient, interp…) run in numera's C++ core
-- **✅ Validated**: 601 tests across 14 files, including differential cases against Python pandas
+- **✅ Validated**: 642 tests across 15 files, including differential cases against Python pandas
 - **🔒 Type-safe**: full TypeScript declarations, ESM + CJS dual output
 - **📦 Pure TypeScript**: no compiler or build tools needed — installs like any npm package
 
@@ -340,7 +340,28 @@ test('rolling mean is correct', () => {
 
 ---
 
-## How it works
+## Coverage & known gaps
+
+pandas-ts covers ~95% of the pandas 2.2 public API surface. The table below summarises what is fully supported, partial, or intentionally out of scope.
+
+| Area | Status | Notes |
+|---|---|---|
+| **Series** — reductions, arithmetic, accessors | ✅ Full | 160+ methods |
+| **DataFrame** — indexing, merge, reshape, IO | ✅ Full | 145+ methods |
+| **GroupBy** — agg, transform, filter, apply | ✅ Full | `sem`/`skew`/`kurt` in agg not yet dispatched |
+| **Rolling / Expanding / EWM** | ✅ Full | `corr`/`cov` with cross-series; EWM cross-corr is planned |
+| **Resample** — mean, sum, min, max, std, count | ✅ Full | `ffill`/`bfill`/`nearest` dispatch planned for v1.2 |
+| **`.str` accessor** | ✅ Full | 58+ methods |
+| **`.dt` accessor** | ✅ Full | 45+ properties/methods; `snap()` planned |
+| **`.cat` accessor** | ✅ Full | 12 methods |
+| **IO** — CSV, JSON, Excel, HTML, XML, SQL, FWF | ✅ Full | All orient modes; JSON `table` schema included |
+| **IO** — Parquet | ⚡ Optional | Install `parquet-wasm` + `apache-arrow` |
+| **IO** — Clipboard | ⚡ Optional | Install `clipboardy` |
+| **IO** — HDF5, Stata, Pickle | 🚫 Stub | No viable pure-JS implementation exists |
+| **MultiIndex** | 🔶 Partial | Core supported; `swaplevel`/`droplevel` on MultiIndex planned |
+| **Sparse arrays / ExtensionArray** | 🚫 Out of scope | No roadmap item yet |
+
+
 
 ```
 your code ──► TypeScript API (pandas-compatible)
@@ -415,7 +436,7 @@ git clone https://github.com/Rajankr542/pandas-ts.git
 cd pandas-ts
 npm install
 npm run build
-npm test          # 601 tests
+npm test          # 642 tests
 npm run typecheck # 0 type errors
 ```
 
