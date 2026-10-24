@@ -11,6 +11,7 @@ import { isMissing, NA } from './na.js';
 import { Rolling, RollingOptions } from './window/rolling.js';
 import { Expanding, ExpandingOptions } from './window/expanding.js';
 import { EWM, EWMOptions } from './window/ewm.js';
+import { DataFrameGroupBy } from './groupby/dataframe_groupby.js';
 
 export type DataInput =
   | Record<string, unknown[] | Float64Array | Int32Array | Uint8Array | BigInt64Array>
@@ -570,8 +571,8 @@ export class DataFrame {
 
   // ── GroupBy ───────────────────────────────────────────────────────────────────
 
-  groupby(by: string | string[]): _DataFrameGroupBy {
-    return new _DataFrameGroupBy(this, Array.isArray(by) ? by : [by]);
+  groupby(by: string | string[], options: { dropna?: boolean; sort?: boolean } = {}): DataFrameGroupBy {
+    return new DataFrameGroupBy(this, Array.isArray(by) ? by : [by], options);
   }
 
   // ── Rolling / Expanding / EWM ────────────────────────────────────────────────
@@ -680,68 +681,3 @@ export class DataFrame {
   }
 }
 
-// ── GroupBy helper ────────────────────────────────────────────────────────────
-
-class _DataFrameGroupBy {
-  private _df: DataFrame;
-  private _by: string[];
-  private _groups: Map<string, number[]>;
-
-  constructor(df: DataFrame, by: string[]) {
-    this._df = df;
-    this._by = by;
-    this._groups = this._buildGroups();
-  }
-
-  private _buildGroups(): Map<string, number[]> {
-    const groups = new Map<string, number[]>();
-    for (let i = 0; i < this._df.index.length; i++) {
-      const key = this._by.map(col => String(this._df.col(col)._getAt(i))).join('|');
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(i);
-    }
-    return groups;
-  }
-
-  sum(): DataFrame { return this._agg(s => s.sum()); }
-  mean(): DataFrame { return this._agg(s => s.mean()); }
-  min(): DataFrame { return this._agg(s => s.min()); }
-  max(): DataFrame { return this._agg(s => s.max()); }
-  count(): DataFrame { return this._agg(s => s.count()); }
-  std(): DataFrame { return this._agg(s => s.std()); }
-
-  private _agg(fn: (s: Series) => unknown): DataFrame {
-    const keyVals: Record<string, unknown[]> = {};
-    for (const col of this._by) keyVals[col] = [];
-    const aggCols = this._df.columns.filter(c => !this._by.includes(c));
-    const aggVals: Record<string, unknown[]> = {};
-    for (const col of aggCols) aggVals[col] = [];
-
-    for (const [key, positions] of this._groups) {
-      const keyParts = key.split('|');
-      for (let k = 0; k < this._by.length; k++) {
-        keyVals[this._by[k]!]!.push(keyParts[k]);
-      }
-      const subDf = this._df._selectRowPositions(positions);
-      for (const col of aggCols) {
-        aggVals[col]!.push(fn(subDf.col(col)));
-      }
-    }
-
-    const allCols = { ...keyVals, ...aggVals };
-    return new DataFrame(allCols);
-  }
-
-  get groups(): Map<string, number[]> { return this._groups; }
-  get ngroups(): number { return this._groups.size; }
-
-  size(): Series {
-    const keys: string[] = [];
-    const sizes: number[] = [];
-    for (const [key, positions] of this._groups) {
-      keys.push(key);
-      sizes.push(positions.length);
-    }
-    return new Series(sizes, { index: keys });
-  }
-}

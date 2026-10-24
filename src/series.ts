@@ -10,6 +10,7 @@ import { isMissing, NA } from './na.js';
 import { Rolling, RollingOptions } from './window/rolling.js';
 import { Expanding, ExpandingOptions } from './window/expanding.js';
 import { EWM, EWMOptions } from './window/ewm.js';
+import { SeriesGroupBy } from './groupby/series_groupby.js';
 
 // Internal column data storage
 type ColumnData = Float64Array | Float32Array | Int32Array | Int16Array | Int8Array |
@@ -647,6 +648,12 @@ export class Series {
       result[i] = leftOk && rightOk ? 1 : 0;
     }
     return new Series(result, { dtype: bool_, index: this._index });
+  }
+
+  // ── GroupBy ──────────────────────────────────────────────────────────────────
+
+  groupby(by: unknown[] | Series, options: { dropna?: boolean } = {}): SeriesGroupBy {
+    return new SeriesGroupBy(this, by, options);
   }
 
   // ── Internal access (for DataFrame) ──────────────────────────────────────────

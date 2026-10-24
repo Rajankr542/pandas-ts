@@ -42,6 +42,10 @@ export { Rolling } from './window/rolling.js';
 export { Expanding } from './window/expanding.js';
 export { EWM } from './window/ewm.js';
 
+// GroupBy
+export { DataFrameGroupBy } from './groupby/dataframe_groupby.js';
+export { SeriesGroupBy } from './groupby/series_groupby.js';
+
 // IO functions
 export {
   read_csv, to_csv, parseCsv, toCsvString,
