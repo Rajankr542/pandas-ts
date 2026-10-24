@@ -171,7 +171,41 @@ describe('JSON - toJsonString', () => {
 });
 
 describe('Stubs', () => {
-  it('read_parquet rejects with NotImplementedError', async () => {
-    await expect(read_parquet('file.parquet')).rejects.toThrow(NotImplementedError);
+  it('read_parquet rejects with NotImplementedError', () => {
+    expect(() => read_parquet('file.parquet')).toThrow(NotImplementedError);
+  });
+});
+
+import { read_excel, to_excel } from '../../src/io/excel.js';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { unlinkSync, existsSync } from 'fs';
+
+describe('Excel IO', () => {
+  it('to_excel then read_excel round-trips', async () => {
+    const df = new DataFrame({ name: ['Alice', 'Bob'], age: [30, 25] });
+    const tmp = join(tmpdir(), `test_${Date.now()}.xlsx`);
+    try {
+      await to_excel(df, { path: tmp, index: false });
+      expect(existsSync(tmp)).toBe(true);
+      const df2 = await read_excel(tmp);
+      expect(df2.shape[0]).toBe(2);
+      expect(df2.columns).toContain('name');
+      expect(df2.columns).toContain('age');
+    } finally {
+      if (existsSync(tmp)) unlinkSync(tmp);
+    }
+  });
+
+  it('to_excel with custom sheet name', async () => {
+    const df = new DataFrame({ x: [1, 2, 3] });
+    const tmp = join(tmpdir(), `test_${Date.now()}.xlsx`);
+    try {
+      await to_excel(df, { path: tmp, sheet_name: 'MySheet', index: false });
+      const df2 = await read_excel(tmp, { sheet_name: 'MySheet' });
+      expect(df2.shape[0]).toBe(3);
+    } finally {
+      if (existsSync(tmp)) unlinkSync(tmp);
+    }
   });
 });

@@ -11,6 +11,7 @@ import { isMissing, NA } from './na.js';
 import { Rolling, RollingOptions } from './window/rolling.js';
 import { Expanding, ExpandingOptions } from './window/expanding.js';
 import { EWM, EWMOptions } from './window/ewm.js';
+import { DataFrameResampler, ResampleOptions } from './resample/resample.js';
 import { DataFrameGroupBy } from './groupby/dataframe_groupby.js';
 
 export type DataInput =
@@ -587,6 +588,10 @@ export class DataFrame {
 
   ewm(options: EWMOptions): EWM {
     return new EWM(this, options);
+  }
+
+  resample(freq: string, options: ResampleOptions = {}): DataFrameResampler {
+    return new DataFrameResampler(this, freq, options);
   }
 
   // ── Type conversion ───────────────────────────────────────────────────────────
