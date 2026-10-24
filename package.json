@@ -1,6 +1,6 @@
 {
   "name": "pandas-ts",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A 100% pandas-compatible DataFrame & Series library for TypeScript and JavaScript, powered by a high-performance C++ core (Node.js native addon + WebAssembly).",
   "keywords": [
     "pandas",
