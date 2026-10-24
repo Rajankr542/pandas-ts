@@ -13,7 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "rootDir": "src"
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

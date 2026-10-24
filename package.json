@@ -56,11 +56,17 @@
     "build:types": "tsc -p tsconfig.types.json",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node test/smoke.mjs && node test/smoke.cjs",
-    "prepublishOnly": "npm run build && npm test"
+    "test:unit": "vitest run tests/unit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "@cyfora/numera": "^1.0.3",
+    "xlsx": "^0.18.5"
   }
 }
