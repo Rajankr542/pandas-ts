@@ -171,7 +171,7 @@ describe('JSON - toJsonString', () => {
 });
 
 describe('Stubs', () => {
-  it('read_parquet throws NotImplementedError', () => {
-    expect(() => read_parquet('file.parquet')).toThrow(NotImplementedError);
+  it('read_parquet rejects with NotImplementedError', async () => {
+    await expect(read_parquet('file.parquet')).rejects.toThrow(NotImplementedError);
   });
 });

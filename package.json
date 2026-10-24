@@ -64,5 +64,8 @@
     "@types/node": "^22.20.4",
     "typescript": "^5.9.3",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
   }
 }

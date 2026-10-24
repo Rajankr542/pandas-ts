@@ -62,7 +62,11 @@ export {
   read_csv, to_csv, parseCsv, toCsvString,
   read_json, to_json, parseJson, toJsonString,
   read_parquet, to_parquet,
-  read_excel, to_excel,
+  read_excel, to_excel, read_excel_all_sheets,
+  read_sql, read_sql_query, read_sql_table, to_sql,
+  read_feather, to_feather,
+  read_pickle, to_pickle,
+  read_clipboard, to_clipboard,
 } from './io/index.js';
 
 // Accessors
