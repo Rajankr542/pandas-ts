@@ -31,14 +31,14 @@
     "url": "https://github.com/Rajankr542/pandas-ts/issues"
   },
   "type": "module",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
+  "main": "./dist/cjs/src/index.js",
+  "module": "./dist/esm/src/index.js",
+  "types": "./dist/types/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "types": "./dist/types/src/index.d.ts",
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/cjs/src/index.js"
     },
     "./package.json": "./package.json"
   },
