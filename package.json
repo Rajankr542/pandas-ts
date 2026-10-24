@@ -1,6 +1,6 @@
 {
   "name": "pandas-ts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "pandas for TypeScript and JavaScript — ~99% pandas API parity, powered by @cyfora/numera's C++ core.",
   "keywords": [
     "pandas",
