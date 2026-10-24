@@ -24,6 +24,9 @@ pnpm-debug.log*
 .env
 .env.*
 
+# Git worktrees (docs branch lives here, not part of main source tree)
+.worktrees/
+
 # OS / editor
 .DS_Store
 .vscode/*
