@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.0.0" data-path="guides/datetime.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datetime · pandas-ts v1.0.0</title>
+<meta name="description" content="Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor.">
+<meta property="og:title" content="Datetime · pandas-ts">
+<meta property="og:description" content="Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="guide">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.0.0" selected>v1.0.0 (latest)</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html" aria-current="page">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li class="active"><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
+  <main id="content" class="content">
+<article class="prose"><p>pandas-ts provides comprehensive datetime support through the <code>Timestamp</code>, <code>Timedelta</code>, <code>DatetimeIndex</code> classes and the <code>.dt</code> accessor.</p>
+<h2 id="timestamp">Timestamp<a class="anchor" href="#timestamp" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { Timestamp } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> ts = <span class="t-kw">new</span> <span class="t-fn">Timestamp</span>(<span class="t-str">'2024-01-15'</span>);
+ts.year;    <span class="t-res">// =&gt; 2024</span>
+ts.month;   <span class="t-res">// =&gt; 1</span>
+ts.day;     <span class="t-res">// =&gt; 15</span>
+ts.hour;    <span class="t-res">// =&gt; 0</span>
+
+<span class="t-com">// From various inputs</span>
+<span class="t-kw">new</span> <span class="t-fn">Timestamp</span>(<span class="t-num">1705276800000</span>);         <span class="t-com">// from Unix ms</span>
+<span class="t-kw">new</span> <span class="t-fn">Timestamp</span>(<span class="t-str">'2024-01-15 10:30:00'</span>);
+<span class="t-kw">new</span> <span class="t-fn">Timestamp</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>());
+
+<span class="t-com">// Arithmetic</span>
+<span class="t-kw">const</span> ts2 = ts.<span class="t-fn">add</span>(<span class="t-str">'1 day'</span>);
+<span class="t-kw">const</span> ts3 = ts.<span class="t-fn">add</span>({ hours: <span class="t-num">6</span> });
+ts.<span class="t-fn">diff</span>(ts2).days;    <span class="t-res">// =&gt; -1</span></code></pre></div>
+<h2 id="timedelta">Timedelta<a class="anchor" href="#timedelta" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { Timedelta } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> td = <span class="t-kw">new</span> <span class="t-fn">Timedelta</span>(<span class="t-str">'7 days'</span>);
+td.days;    <span class="t-res">// =&gt; 7</span>
+td.<span class="t-fn">total_seconds</span>();    <span class="t-res">// =&gt; 604800</span>
+
+<span class="t-kw">new</span> <span class="t-fn">Timedelta</span>({ days: <span class="t-num">1</span>, hours: <span class="t-num">6</span>, minutes: <span class="t-num">30</span> });
+<span class="t-kw">new</span> <span class="t-fn">Timedelta</span>(<span class="t-str">'1 day 6:30:00'</span>);</code></pre></div>
+<h2 id="date-range">date_range<a class="anchor" href="#date-range" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Daily range</span>
+<span class="t-kw">const</span> daily = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">10</span>, freq: <span class="t-str">'D'</span> });
+daily.length;    <span class="t-res">// =&gt; 10</span>
+
+<span class="t-com">// Monthly</span>
+<span class="t-kw">const</span> monthly = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">12</span>, freq: <span class="t-str">'MS'</span> });
+
+<span class="t-com">// With end date</span>
+<span class="t-kw">const</span> range = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, <span class="t-str">'2024-12-31'</span>, { freq: <span class="t-str">'W'</span> });
+
+<span class="t-com">// Business days</span>
+<span class="t-kw">const</span> bdays = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">5</span>, freq: <span class="t-str">'B'</span> });</code></pre></div>
+<h2 id="to-datetime">to_datetime<a class="anchor" href="#to-datetime" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Parse a single date</span>
+pd.<span class="t-fn">to_datetime</span>(<span class="t-str">'2024-01-15'</span>).year;    <span class="t-res">// =&gt; 2024</span>
+
+<span class="t-com">// Parse an array (returns DatetimeIndex)</span>
+pd.<span class="t-fn">to_datetime</span>([<span class="t-str">'2024-01-01'</span>, <span class="t-str">'2024-02-01'</span>, <span class="t-str">'2024-03-01'</span>]);
+
+<span class="t-com">// With format</span>
+pd.<span class="t-fn">to_datetime</span>(<span class="t-str">'15/01/2024'</span>, { format: <span class="t-str">'%d/%m/%Y'</span> });
+
+<span class="t-com">// Coerce errors</span>
+pd.<span class="t-fn">to_datetime</span>([<span class="t-str">'2024-01-01'</span>, <span class="t-str">'not-a-date'</span>], { errors: <span class="t-str">'coerce'</span> });</code></pre></div>
+<h2 id="the-dt-accessor">The .dt accessor<a class="anchor" href="#the-dt-accessor" aria-label="Link to this section">#</a></h2>
+<p>When a Series contains datetime values, the <code>.dt</code> accessor provides date/time properties:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> dates = <span class="t-kw">new</span> <span class="t-fn">Series</span>(pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">5</span>, freq: <span class="t-str">'D'</span> }));
+
+<span class="t-com">// Date components</span>
+dates.dt.year.<span class="t-fn">to_list</span>();        <span class="t-res">// =&gt; [2024, 2024, 2024, 2024, 2024]</span>
+dates.dt.month.<span class="t-fn">to_list</span>();       <span class="t-res">// =&gt; [1, 1, 1, 1, 1]</span>
+dates.dt.day.<span class="t-fn">to_list</span>();         <span class="t-res">// =&gt; [1, 2, 3, 4, 5]</span>
+dates.dt.dayofweek.<span class="t-fn">to_list</span>();   <span class="t-res">// =&gt; [0, 1, 2, 3, 4] (Mon=0)</span>
+dates.dt.dayofyear.<span class="t-fn">to_list</span>();   <span class="t-res">// =&gt; [1, 2, 3, 4, 5]</span>
+dates.dt.weekday.<span class="t-fn">to_list</span>();     <span class="t-res">// =&gt; [0, 1, 2, 3, 4]</span>
+dates.dt.quarter.<span class="t-fn">to_list</span>();     <span class="t-res">// =&gt; [1, 1, 1, 1, 1]</span>
+
+<span class="t-com">// Time components</span>
+dates.dt.hour.<span class="t-fn">to_list</span>();
+dates.dt.minute.<span class="t-fn">to_list</span>();
+dates.dt.second.<span class="t-fn">to_list</span>();
+
+<span class="t-com">// Boolean flags</span>
+dates.dt.is_month_start.<span class="t-fn">to_list</span>();   <span class="t-res">// =&gt; [true, false, false, false, false]</span>
+dates.dt.is_month_end.<span class="t-fn">to_list</span>();
+dates.dt.is_year_start.<span class="t-fn">to_list</span>();
+dates.dt.is_year_end.<span class="t-fn">to_list</span>();
+dates.dt.is_leap_year.<span class="t-fn">to_list</span>();
+
+<span class="t-com">// Operations</span>
+dates.dt.<span class="t-fn">floor</span>(<span class="t-str">'H'</span>);    <span class="t-com">// floor to nearest hour</span>
+dates.dt.<span class="t-fn">ceil</span>(<span class="t-str">'D'</span>);     <span class="t-com">// ceil to nearest day</span>
+dates.dt.<span class="t-fn">round</span>(<span class="t-str">'min'</span>);  <span class="t-com">// round to nearest minute</span>
+dates.dt.<span class="t-fn">strftime</span>(<span class="t-str">'%Y-%m-%d'</span>).<span class="t-fn">to_list</span>();</code></pre></div>
+<h2 id="resampling">Resampling<a class="anchor" href="#resampling" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> df = <span class="t-kw">new</span> pd.<span class="t-fn">DataFrame</span>({
+  date: pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">365</span>, freq: <span class="t-str">'D'</span> }),
+  value: Array.<span class="t-kw">from</span>({ length: <span class="t-num">365</span> }, () =&gt; Math.<span class="t-fn">random</span>() * <span class="t-num">100</span>),
+});
+
+<span class="t-com">// Aggregate by month</span>
+<span class="t-kw">const</span> monthly = df.<span class="t-fn">resample</span>(<span class="t-str">'ME'</span>, { on: <span class="t-str">'date'</span> }).<span class="t-fn">mean</span>();
+monthly.shape;    <span class="t-res">// =&gt; [12, 1]</span>
+
+<span class="t-com">// Aggregate by quarter</span>
+<span class="t-kw">const</span> quarterly = df.<span class="t-fn">resample</span>(<span class="t-str">'QE'</span>, { on: <span class="t-str">'date'</span> }).<span class="t-fn">sum</span>();</code></pre></div>
+<h2 id="infer-freq">infer_freq<a class="anchor" href="#infer-freq" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { infer_freq } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-fn">infer_freq</span>([<span class="t-str">'2024-01-01'</span>,<span class="t-str">'2024-01-02'</span>,<span class="t-str">'2024-01-03'</span>]);    <span class="t-res">// =&gt; 'D'</span>
+<span class="t-fn">infer_freq</span>([<span class="t-str">'2024-01-01'</span>,<span class="t-str">'2024-02-01'</span>,<span class="t-str">'2024-03-01'</span>]);    <span class="t-res">// =&gt; 'MS'</span>
+<span class="t-fn">infer_freq</span>([<span class="t-str">'2024-01-01'</span>,<span class="t-str">'2024-04-01'</span>,<span class="t-str">'2024-07-01'</span>]);    <span class="t-res">// =&gt; 'QS'</span>
+<span class="t-fn">infer_freq</span>([<span class="t-str">'2024-01-01T00:00'</span>,<span class="t-str">'2024-01-01T01:00'</span>]);     <span class="t-res">// =&gt; 'H'</span></code></pre></div></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#timestamp">Timestamp</a></li><li class="l2"><a href="#timedelta">Timedelta</a></li><li class="l2"><a href="#date-range">date_range</a></li><li class="l2"><a href="#to-datetime">to_datetime</a></li><li class="l2"><a href="#the-dt-accessor">The .dt accessor</a></li><li class="l2"><a href="#resampling">Resampling</a></li><li class="l2"><a href="#infer-freq">infer_freq</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."},{"path":"guides/io.html","title":"IO","description":"Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more."}]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>

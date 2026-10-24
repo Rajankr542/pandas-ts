@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.0.0" data-path="guides/dataframe-basics.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataFrame basics · pandas-ts v1.0.0</title>
+<meta name="description" content="Construction, selection, assignment, reshaping, merging and aggregation for DataFrame.">
+<meta property="og:title" content="DataFrame basics · pandas-ts">
+<meta property="og:description" content="Construction, selection, assignment, reshaping, merging and aggregation for DataFrame.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="guide">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.0.0" selected>v1.0.0 (latest)</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html" aria-current="page">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li class="active"><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
+  <main id="content" class="content">
+<article class="prose"><p>A <code>DataFrame</code> is a two-dimensional table with labeled axes (rows and columns).</p>
+<h2 id="construction">Construction<a class="anchor" href="#construction" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { DataFrame } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// From object of arrays (most common)</span>
+<span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>], b: [<span class="t-num">4</span>,<span class="t-num">5</span>,<span class="t-num">6</span>] });
+
+<span class="t-com">// From array of objects</span>
+<span class="t-kw">new</span> <span class="t-fn">DataFrame</span>([{ a:<span class="t-num">1</span>, b:<span class="t-num">4</span> }, { a:<span class="t-num">2</span>, b:<span class="t-num">5</span> }, { a:<span class="t-num">3</span>, b:<span class="t-num">6</span> }]);
+
+<span class="t-com">// With custom index</span>
+<span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>] }, { index: [<span class="t-str">'x'</span>,<span class="t-str">'y'</span>,<span class="t-str">'z'</span>] });
+
+<span class="t-com">// From a 2D array with column names</span>
+<span class="t-kw">new</span> <span class="t-fn">DataFrame</span>([[<span class="t-num">1</span>,<span class="t-num">4</span>],[<span class="t-num">2</span>,<span class="t-num">5</span>],[<span class="t-num">3</span>,<span class="t-num">6</span>]], { columns: [<span class="t-str">'a'</span>,<span class="t-str">'b'</span>] });</code></pre></div>
+<h2 id="shape-and-info">Shape and info<a class="anchor" href="#shape-and-info" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.shape        <span class="t-res">// =&gt; [3, 2]</span>
+df.columns      <span class="t-res">// =&gt; ['a', 'b']</span>
+df.index        <span class="t-res">// =&gt; [0, 1, 2]</span>
+df.dtypes       <span class="t-res">// =&gt; { a: DType('int64'), b: DType('int64') }</span>
+df.size         <span class="t-res">// =&gt; 6  (total elements)</span>
+df.<span class="t-fn">info</span>()       <span class="t-com">// prints column info to console</span></code></pre></div>
+<h2 id="selection">Selection<a class="anchor" href="#selection" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">col</span>(<span class="t-str">'a'</span>)                      <span class="t-res">// =&gt; Series</span>
+df.<span class="t-fn">loc</span>(df.<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">gt</span>(<span class="t-num">1</span>))        <span class="t-com">// boolean indexing → DataFrame</span>
+df.<span class="t-fn">iloc_row</span>(<span class="t-num">0</span>)                   <span class="t-com">// first row as Series</span>
+df.<span class="t-fn">head</span>(<span class="t-num">2</span>)                       <span class="t-com">// first 2 rows</span>
+df.<span class="t-fn">tail</span>(<span class="t-num">2</span>)                       <span class="t-com">// last 2 rows</span>
+df.<span class="t-fn">sample</span>(<span class="t-num">2</span>)                     <span class="t-com">// 2 random rows</span>
+df.<span class="t-fn">loc_cols</span>([<span class="t-str">'a'</span>, <span class="t-str">'b'</span>])          <span class="t-com">// subset of columns</span></code></pre></div>
+<h2 id="mutation-returns-new-dataframe">Mutation (returns new DataFrame)<a class="anchor" href="#mutation-returns-new-dataframe" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">assign</span>({ c: df.<span class="t-fn">col</span>(<span class="t-str">'a'</span>).<span class="t-fn">add</span>(df.<span class="t-fn">col</span>(<span class="t-str">'b'</span>)) })    <span class="t-com">// add column</span>
+df.<span class="t-fn">drop</span>([<span class="t-str">'b'</span>], { axis: <span class="t-num">1</span> })                        <span class="t-com">// drop column</span>
+df.<span class="t-fn">drop</span>([<span class="t-num">0</span>, <span class="t-num">1</span>])                                    <span class="t-com">// drop rows by label</span>
+df.<span class="t-fn">rename</span>({ a: <span class="t-str">'alpha'</span> })                          <span class="t-com">// rename columns</span>
+df.<span class="t-fn">fillna</span>(<span class="t-num">0</span>)                                       <span class="t-com">// fill NaN</span>
+df.<span class="t-fn">replace</span>(NaN, <span class="t-num">0</span>)                                 <span class="t-com">// replace values</span>
+df.<span class="t-fn">set_index</span>(<span class="t-str">'a'</span>)                                  <span class="t-com">// use column as index</span>
+df.<span class="t-fn">reset_index</span>()                                   <span class="t-com">// reset to integer index</span></code></pre></div>
+<h2 id="merge-and-concat">Merge and concat<a class="anchor" href="#merge-and-concat" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { concat } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-fn">concat</span>([df1, df2])                  <span class="t-com">// vertical (axis=0)</span>
+<span class="t-fn">concat</span>([df1, df2], { axis: <span class="t-num">1</span> })     <span class="t-com">// horizontal</span>
+
+df1.<span class="t-fn">merge</span>(df2, { on: <span class="t-str">'id'</span> })        <span class="t-com">// inner join</span>
+df1.<span class="t-fn">merge</span>(df2, { on: <span class="t-str">'id'</span>, how: <span class="t-str">'left'</span> })   <span class="t-com">// left join</span>
+df1.<span class="t-fn">merge</span>(df2, { on: <span class="t-str">'id'</span>, how: <span class="t-str">'outer'</span> })  <span class="t-com">// outer join</span>
+df1.<span class="t-fn">join</span>(df2, { on: <span class="t-str">'id'</span> })         <span class="t-com">// join on index</span></code></pre></div>
+<h2 id="aggregation">Aggregation<a class="anchor" href="#aggregation" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">sum</span>()               <span class="t-com">// sum of each column</span>
+df.<span class="t-fn">mean</span>()              <span class="t-com">// mean of each column</span>
+df.<span class="t-fn">describe</span>()          <span class="t-com">// count, mean, std, min, quartiles, max</span>
+df.<span class="t-fn">nunique</span>()           <span class="t-com">// count of unique values per column</span>
+df.<span class="t-fn">corr</span>()              <span class="t-com">// pairwise Pearson correlation</span>
+df.<span class="t-fn">cov</span>()               <span class="t-com">// pairwise covariance</span></code></pre></div>
+<h2 id="pivot-and-reshape">Pivot and reshape<a class="anchor" href="#pivot-and-reshape" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Pivot table</span>
+df.<span class="t-fn">pivot_table</span>({
+  index: <span class="t-str">'region'</span>,
+  columns: <span class="t-str">'year'</span>,
+  values: <span class="t-str">'sales'</span>,
+  aggfunc: <span class="t-str">'sum'</span>
+})
+
+<span class="t-com">// Melt (wide to long)</span>
+df.<span class="t-fn">melt</span>({
+  id_vars: <span class="t-str">'id'</span>,
+  value_vars: [<span class="t-str">'jan'</span>,<span class="t-str">'feb'</span>,<span class="t-str">'mar'</span>],
+  var_name: <span class="t-str">'month'</span>,
+  value_name: <span class="t-str">'sales'</span>
+})
+
+<span class="t-com">// Stack / unstack</span>
+df.<span class="t-fn">stack</span>()     <span class="t-com">// columns to index</span>
+df.<span class="t-fn">unstack</span>()   <span class="t-com">// index to columns</span>
+df.T           <span class="t-com">// transpose</span></code></pre></div>
+<h2 id="apply-and-transform">Apply and transform<a class="anchor" href="#apply-and-transform" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Apply function to each column</span>
+df.<span class="t-fn">apply</span>(col =&gt; col.<span class="t-fn">sum</span>())
+
+<span class="t-com">// Apply function element-wise</span>
+df.<span class="t-fn">applymap</span>(x =&gt; x * <span class="t-num">2</span>)
+
+<span class="t-com">// Named aggregation</span>
+df.<span class="t-fn">groupby</span>(<span class="t-str">'category'</span>).<span class="t-fn">agg</span>({
+  sales: [<span class="t-str">'sum'</span>, <span class="t-str">'mean'</span>, <span class="t-str">'std'</span>],
+  units: <span class="t-str">'count'</span>
+})</code></pre></div>
+<h2 id="sorting-and-filtering">Sorting and filtering<a class="anchor" href="#sorting-and-filtering" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>df.<span class="t-fn">sort_values</span>(<span class="t-str">'sales'</span>, { ascending: <span class="t-kw">false</span> })
+df.<span class="t-fn">sort_index</span>()
+df.<span class="t-fn">query</span>(<span class="t-str">'sales &gt; 100 and region == &quot;West&quot;'</span>)
+df.<span class="t-fn">nlargest</span>(<span class="t-num">5</span>, <span class="t-str">'sales'</span>)
+df.<span class="t-fn">nsmallest</span>(<span class="t-num">3</span>, <span class="t-str">'price'</span>)</code></pre></div></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#construction">Construction</a></li><li class="l2"><a href="#shape-and-info">Shape and info</a></li><li class="l2"><a href="#selection">Selection</a></li><li class="l2"><a href="#mutation-returns-new-dataframe">Mutation (returns new DataFrame)</a></li><li class="l2"><a href="#merge-and-concat">Merge and concat</a></li><li class="l2"><a href="#aggregation">Aggregation</a></li><li class="l2"><a href="#pivot-and-reshape">Pivot and reshape</a></li><li class="l2"><a href="#apply-and-transform">Apply and transform</a></li><li class="l2"><a href="#sorting-and-filtering">Sorting and filtering</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."}]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>

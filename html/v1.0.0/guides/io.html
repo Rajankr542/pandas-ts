@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.0.0" data-path="guides/io.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IO · pandas-ts v1.0.0</title>
+<meta name="description" content="Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more.">
+<meta property="og:title" content="IO · pandas-ts">
+<meta property="og:description" content="Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="guide">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.0.0" selected>v1.0.0 (latest)</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html" aria-current="page">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li class="active"><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
+  <main id="content" class="content">
+<article class="prose"><p>pandas-ts supports reading and writing data in many formats. All IO functions are available as named exports and as methods on DataFrame.</p>
+<h2 id="csv">CSV<a class="anchor" href="#csv" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_csv } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Read</span>
+<span class="t-kw">const</span> df = <span class="t-fn">read_csv</span>(<span class="t-str">'sales.csv'</span>);
+<span class="t-kw">const</span> df2 = <span class="t-fn">read_csv</span>(<span class="t-str">'data.csv'</span>, {
+  sep: <span class="t-str">';'</span>,
+  header: <span class="t-num">0</span>,
+  usecols: [<span class="t-str">'name'</span>, <span class="t-str">'value'</span>],
+  na_values: [<span class="t-str">'N/A'</span>, <span class="t-str">'missing'</span>],
+  skiprows: <span class="t-num">2</span>,
+  nrows: <span class="t-num">1000</span>,
+});
+
+<span class="t-com">// Write</span>
+df.<span class="t-fn">to_csv</span>(<span class="t-str">'output.csv'</span>);
+<span class="t-kw">const</span> csvString = df.<span class="t-fn">to_csv</span>();   <span class="t-com">// returns string if no path given</span></code></pre></div>
+<h2 id="json">JSON<a class="anchor" href="#json" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_json } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Read</span>
+<span class="t-kw">const</span> df = <span class="t-fn">read_json</span>(<span class="t-str">'data.json'</span>);
+<span class="t-kw">const</span> df2 = <span class="t-fn">read_json</span>(<span class="t-str">'[{&quot;a&quot;:1,&quot;b&quot;:2},{&quot;a&quot;:3,&quot;b&quot;:4}]'</span>);  <span class="t-com">// from string</span>
+<span class="t-kw">const</span> df3 = <span class="t-fn">read_json</span>(<span class="t-str">'records.json'</span>, { orient: <span class="t-str">'records'</span> });
+
+<span class="t-com">// Write</span>
+df.<span class="t-fn">to_json</span>(<span class="t-str">'output.json'</span>);
+<span class="t-kw">const</span> jsonString = df.<span class="t-fn">to_json</span>();   <span class="t-com">// returns string</span>
+<span class="t-kw">const</span> compact = df.<span class="t-fn">to_json</span>(<span class="t-kw">undefined</span>, { orient: <span class="t-str">'split'</span> });</code></pre></div>
+<h2 id="excel">Excel<a class="anchor" href="#excel" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_excel } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Read (requires xlsx peer dependency)</span>
+<span class="t-kw">const</span> df = <span class="t-fn">read_excel</span>(<span class="t-str">'report.xlsx'</span>);
+<span class="t-kw">const</span> df2 = <span class="t-fn">read_excel</span>(<span class="t-str">'report.xlsx'</span>, {
+  sheet_name: <span class="t-str">'Sheet2'</span>,
+  header: <span class="t-num">1</span>,
+  usecols: <span class="t-str">'A:D'</span>,
+});
+
+<span class="t-com">// Write</span>
+df.<span class="t-fn">to_excel</span>(<span class="t-str">'output.xlsx'</span>);
+df.<span class="t-fn">to_excel</span>(<span class="t-str">'output.xlsx'</span>, { sheet_name: <span class="t-str">'Results'</span>, index: <span class="t-kw">false</span> });</code></pre></div>
+<aside class="callout note"><strong>Note</strong><p>Excel support requires the <code>xlsx</code> package: <code>npm install xlsx</code></p></aside>
+<h2 id="parquet">Parquet<a class="anchor" href="#parquet" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_parquet } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Read (stub — requires native parser)</span>
+<span class="t-kw">const</span> df = <span class="t-fn">read_parquet</span>(<span class="t-str">'data.parquet'</span>);
+
+<span class="t-com">// Write (stub)</span>
+df.<span class="t-fn">to_parquet</span>(<span class="t-str">'output.parquet'</span>);</code></pre></div>
+<aside class="callout note"><strong>Note</strong><p>Parquet support is a stub. It throws unless you provide a compatible parser via <code>pd.options.parquet.engine</code>.</p></aside>
+<h2 id="sql">SQL<a class="anchor" href="#sql" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_sql } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Works with any database that returns row objects</span>
+<span class="t-kw">const</span> db = <span class="t-fn">getDbConnection</span>();
+<span class="t-kw">const</span> df = <span class="t-fn">read_sql</span>(<span class="t-str">'SELECT * FROM orders WHERE status = &quot;open&quot;'</span>, db);
+
+<span class="t-com">// Write</span>
+df.<span class="t-fn">to_sql</span>(<span class="t-str">'orders_backup'</span>, db, { if_exists: <span class="t-str">'replace'</span> });</code></pre></div>
+<h2 id="feather">Feather<a class="anchor" href="#feather" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_feather } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> df = <span class="t-fn">read_feather</span>(<span class="t-str">'data.feather'</span>);
+df.<span class="t-fn">to_feather</span>(<span class="t-str">'output.feather'</span>);</code></pre></div>
+<h2 id="clipboard">Clipboard<a class="anchor" href="#clipboard" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Read tab-separated data from clipboard (browser or Electron only)</span>
+<span class="t-kw">const</span> df = <span class="t-kw">await</span> pd.<span class="t-fn">read_clipboard</span>();
+
+<span class="t-com">// Write to clipboard</span>
+df.<span class="t-fn">to_clipboard</span>();</code></pre></div>
+<h2 id="html">HTML<a class="anchor" href="#html" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_html } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Parse all tables from an HTML string or URL</span>
+<span class="t-kw">const</span> tables = <span class="t-fn">read_html</span>(<span class="t-str">'&lt;table&gt;&lt;tr&gt;&lt;th&gt;a&lt;/th&gt;&lt;th&gt;b&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;'</span>);
+tables[<span class="t-num">0</span>].shape;    <span class="t-res">// =&gt; [1, 2]</span></code></pre></div>
+<h2 id="xml">XML<a class="anchor" href="#xml" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { read_xml } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> df = <span class="t-fn">read_xml</span>(<span class="t-str">'&lt;data&gt;&lt;row&gt;&lt;a&gt;1&lt;/a&gt;&lt;b&gt;2&lt;/b&gt;&lt;/row&gt;&lt;/data&gt;'</span>, {
+  xpath: <span class="t-str">'.//row'</span>,
+});</code></pre></div>
+<h2 id="pickle">Pickle<a class="anchor" href="#pickle" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Serialise/deserialise a DataFrame using a binary format</span>
+df.<span class="t-fn">to_pickle</span>(<span class="t-str">'model.pkl'</span>);
+<span class="t-kw">const</span> df2 = pd.<span class="t-fn">read_pickle</span>(<span class="t-str">'model.pkl'</span>);</code></pre></div></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#csv">CSV</a></li><li class="l2"><a href="#json">JSON</a></li><li class="l2"><a href="#excel">Excel</a></li><li class="l2"><a href="#parquet">Parquet</a></li><li class="l2"><a href="#sql">SQL</a></li><li class="l2"><a href="#feather">Feather</a></li><li class="l2"><a href="#clipboard">Clipboard</a></li><li class="l2"><a href="#html">HTML</a></li><li class="l2"><a href="#xml">XML</a></li><li class="l2"><a href="#pickle">Pickle</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."}]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>

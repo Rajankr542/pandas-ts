@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-root="../../" data-ver-root="../" data-version="1.0.0" data-path="changelog.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog · pandas-ts v1.0.0</title>
+<meta name="description" content="pandas-ts release notes.">
+<meta property="og:title" content="Changelog · pandas-ts">
+<meta property="og:description" content="pandas-ts release notes.">
+<meta name="theme-color" content="#1565c0">
+<link rel="icon" href="../../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{var t=localStorage.getItem("pandas-ts-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="top-in">
+    <button class="icon-btn menu" type="button" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+    <label class="ver-pick"><span class="sr">Documentation version</span><select id="ver" aria-label="Documentation version"><option value="1.0.0" selected>v1.0.0 (latest)</option></select></label>
+    <nav class="tabs" aria-label="Sections"><a href="../index.html">Guides</a><a href="../reference/index.html">API Reference</a><a href="../compatibility.html">pandas compatibility</a><a href="../changelog.html" aria-current="page">Changelog</a></nav>
+    <div class="top-actions">
+      <button class="search-btn" type="button" data-open-search><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+      <button class="icon-btn theme" type="button" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" aria-hidden="true" class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" class="i-moon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg></button>
+      <a class="npm" href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="Documentation"></nav>
+  <main id="content" class="content">
+<article class="prose"><h2 id="1-0-0-2026-10-24">1.0.0 — 2026-10-24<a class="anchor" href="#1-0-0-2026-10-24" aria-label="Link to this section">#</a></h2>
+<p>Initial public release.</p>
+<h3 id="what-s-included">What's included<a class="anchor" href="#what-s-included" aria-label="Link to this section">#</a></h3>
+<ul><li><strong>Series</strong> — 152+ methods, ~95% pandas parity</li><li><strong>DataFrame</strong> — 134+ methods, ~90% pandas parity</li><li><strong>Top-level <code>pd.*</code></strong> — 30 functions: <code>concat</code>, <code>merge</code>, <code>merge_asof</code>, <code>cut</code>, <code>qcut</code>, <code>crosstab</code>, <code>factorize</code>, <code>wide_to_long</code>, <code>json_normalize</code>, <code>date_range</code>, <code>to_datetime</code>, <code>pivot_table</code>, <code>melt</code>, <code>eval</code>, <code>infer_freq</code>, <code>get_dummies</code>, <code>from_dummies</code>, <code>isna</code>, <code>notna</code>, <code>unique</code>, <code>value_counts</code></li><li><strong>GroupBy</strong> — 30+ methods on DataFrameGroupBy and SeriesGroupBy</li><li><strong>Rolling / Expanding / EWM</strong> — full window methods including <code>skew</code>, <code>kurt</code>, <code>sem</code>, <code>corr</code>, <code>cov</code></li><li><strong>Resample</strong> — DataFrameResampler + SeriesResampler</li><li><strong><code>.str</code> accessor</strong> — 58 string methods</li><li><strong><code>.dt</code> accessor</strong> — 45 datetime properties/methods</li><li><strong><code>.cat</code> accessor</strong> — 12 categorical methods</li><li><strong>Index types</strong> — Index, RangeIndex, Int64Index, Float64Index, StringIndex, DatetimeIndex, MultiIndex</li><li><strong>Scalars</strong> — Timestamp, Timedelta with full arithmetic and parsing</li><li><strong>IO</strong> — CSV, JSON, Excel, Parquet, SQL, Feather, Pickle, Clipboard, HTML, XML, FWF (stub: HDF5, Stata)</li><li><strong>tseries.offsets</strong> — BusinessDay, MonthEnd, MonthBegin, YearEnd, YearBegin, QuarterEnd, QuarterBegin, Week, Day, Hour, Minute, Second, Milli, Micro, Nano, BusinessHour</li><li><strong>pd.testing</strong> — <code>assert_series_equal</code>, <code>assert_frame_equal</code>, <code>assert_index_equal</code></li><li><strong>pd.eval</strong> — safe expression evaluator for DataFrame columns</li><li><strong>pd.infer_freq</strong> — detects <code>D</code>, <code>H</code>, <code>T</code>, <code>S</code>, <code>W</code>, <code>MS</code>, <code>ME</code>, <code>QS</code>, <code>QE</code>, <code>YS</code>, <code>YE</code></li><li><strong>@cyfora/numera integration</strong> — hist, gradient, percentile, interp, average, norm, corrWithNumera, covWithNumera, ndiff, convolve, cumsumNumera, cumprodNumera; DataFrame.cov_matrix, corr_matrix</li><li><strong>601 tests</strong>, 14 test files, 0 type errors</li></ul></article>
+
+  </main>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#1-0-0-2026-10-24">1.0.0 — 2026-10-24</a></li><li class="l3"><a href="#what-s-included">What's included</a></li></ul></aside>
+</div>
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <a class="brand" href="../index.html"><img class="logo-mark" src="../../assets/logo.png" width="24" height="24" alt="pandas-ts"><span>pandas-ts</span></a>
+      <p>pandas for TypeScript and JavaScript, powered by a C++ core.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h2>Docs</h2><ul>
+        <li><a href="../guides/quickstart.html">Quickstart</a></li>
+        <li><a href="../reference/index.html">API reference</a></li>
+        <li><a href="../changelog.html">Changelog</a></li>
+      </ul></div>
+      <div><h2>Package</h2><ul>
+        <li><a href="https://www.npmjs.com/package/pandas-ts" rel="noopener" target="_blank">npm: pandas-ts</a></li>
+        <li><a href="../compatibility.html">pandas compatibility</a></li>
+        <li><span>MIT License</span></li>
+      </ul></div>
+      <div><h2>Made by</h2><ul>
+        <li><a href="https://github.com/Rajankr542" rel="noopener author" target="_blank">Rajan Kumar · @Rajankr542</a></li>
+        <li><a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora · cyfora.in</a></li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot-legal">
+    <p>© 2026 <a href="https://github.com/Rajankr542" rel="noopener" target="_blank">Rajan Kumar</a> and <a href="https://cyfora.in" rel="noopener" target="_blank">Cyfora</a>. pandas-ts is released under the MIT License.
+    pandas is a trademark of the pandas development team. pandas-ts is an independent project not affiliated with or endorsed by the pandas development team.</p>
+  </div>
+</footer>
+<div class="palette" hidden role="dialog" aria-modal="true" aria-label="Search the documentation">
+  <div class="palette-box">
+    <div class="palette-q"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search functions, guides and pandas names…" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <ul class="palette-res" role="listbox"></ul>
+    <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
+  </div>
+</div>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."},{"path":"guides/io.html","title":"IO","description":"Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more."},{"path":"guides/datetime.html","title":"Datetime","description":"Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor."},{"path":"guides/offsets.html","title":"tseries.offsets","description":"Date offset classes: BusinessDay, MonthEnd, Week, Hour and friends."},{"path":"guides/testing.html","title":"Testing","description":"pd.testing: assert_series_equal and assert_frame_equal for unit tests."},{"path":"guides/typescript.html","title":"TypeScript","description":"Types exported by pandas-ts and how to use them."},{"path":"reference/index.html","title":"API Reference","description":""},{"path":"reference/series.html","title":"Series","description":"A one-dimensional labeled array capable of holding any data type. The axis labels are collectively referred to as the index."},{"path":"reference/dataframe.html","title":"DataFrame","description":"Two-dimensional, size-mutable, potentially heterogeneous tabular data. Contains labeled axes (rows and columns)."},{"path":"reference/functions.html","title":"Top-level functions","description":"Functions available directly on the `pd` namespace (the default export), mirroring pandas top-level functions."},{"path":"reference/groupby.html","title":"GroupBy","description":"Groupby operations follow the split-apply-combine paradigm. Group a DataFrame or Series, apply an aggregation or transformation, and combine into a result."},{"path":"reference/io.html","title":"IO","description":"Functions for reading data into DataFrames and writing DataFrames to files. All read/write functions are available at the top level (`pd.read_csv`, `pd.to_csv`, etc.)."},{"path":"reference/offsets.html","title":"tseries.offsets","description":"Date offset classes for arithmetic on dates. All offsets have `apply(date)`, `rollforward(date)` and `rollback(date)` methods."},{"path":"reference/testing.html","title":"pd.testing","description":"Test utilities for comparing Series and DataFrames. Mirrors pandas.testing."},{"path":"compatibility.html","title":"pandas compatibility","description":""}]};</script>
+<script src="../search-index.js" defer></script>
+<script src="../../assets/app.js" defer></script>
+</body>
+</html>
