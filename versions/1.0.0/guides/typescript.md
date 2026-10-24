@@ -1,110 +1,132 @@
 # TypeScript
 
-pandas-ts is written in TypeScript. Type declarations are included — no `@types` package needed.
+pandas-ts is written in TypeScript and exports full type definitions. This page documents the key types and how to use them effectively.
 
-## Imports
+## Core types
 
 ```ts
-import pd from 'pandas-ts';
-// or:
-import {
+import type {
   Series,
   DataFrame,
-  read_csv,
-  concat,
-  merge,
-  date_range,
-  to_datetime,
-  isna,
-  cut,
-  get_dummies,
-  pdEval,
-  infer_freq,
-  BusinessDay,
-  MonthEnd,
-  assert_series_equal,
-  assert_frame_equal,
-  AssertionError,
+  DType,
+  Index,
+  DatetimeIndex,
+  Timestamp,
+  Timedelta,
 } from 'pandas-ts';
 ```
 
-## Key types
+## Generic Series
 
-### Series
+`Series<T>` is generic over the value type:
 
 ```ts
-const s: Series = new Series([1, 2, 3]);
-s.size;                    // number
-s.dtype;                   // DType
-s.name;                    // string | null
-s.index;                   // (string | number)[]
-s.to_list(): unknown[];
+const numericSeries: Series<number> = new Series([1, 2, 3]);
+const strSeries: Series<string> = new Series(['a', 'b', 'c']);
+const boolSeries: Series<boolean> = new Series([true, false, true]);
 ```
 
-### DataFrame
+In most cases TypeScript infers the type automatically:
 
 ```ts
-const df: DataFrame = new DataFrame({ a: [1,2,3] });
-df.shape;                  // [number, number]
-df.columns;                // string[]
-df.index;                  // (string | number)[]
-df.col(name: string);      // Series
-df.shape[0];               // number of rows
-df.shape[1];               // number of columns
+const s = new Series([1, 2, 3]);
+// TypeScript infers: Series<number>
 ```
 
-### DType
+## DataFrame columns
 
 ```ts
-s.dtype.name;    // 'int64' | 'float64' | 'object' | 'bool' | 'datetime64' | 'category' | ...
+const df = new DataFrame({ name: ['Alice', 'Bob'], age: [30, 25] });
+// Inferred: DataFrame<{ name: string; age: number }>
+
+// Column access is typed
+const names = df.col('name');   // Series<string>
+const ages = df.col('age');     // Series<number>
 ```
 
-### DateOffset (base class)
+## DType
 
 ```ts
-import { DateOffset, BusinessDay } from 'pandas-ts';
+import type { DType, DTypeName } from 'pandas-ts';
 
-const bd: DateOffset = new BusinessDay(1);
-bd.apply(new Date());        // Date
-bd.rollforward(new Date());  // Date
-bd.rollback(new Date());     // Date
-```
+const dtype: DType = new Series([1, 2, 3]).dtype;
+dtype.name;    // DTypeName: 'int64' | 'float64' | 'object' | 'bool' | 'datetime64' | 'category'
 
-### AssertionError
-
-```ts
-import { AssertionError } from 'pandas-ts';
-try {
-  assert_series_equal(a, b);
-} catch (e: unknown) {
-  if (e instanceof AssertionError) {
-    console.error(e.message);
-  }
+// Check dtype
+if (dtype.name === 'float64') {
+  // numeric operations are safe
 }
 ```
 
-## Generic patterns
+## SeriesOptions and DataFrameOptions
 
 ```ts
-// Type a function that accepts a Series
-function standardize(s: Series): Series {
-  return s.sub(s.mean()).div(s.std());
-}
+import type { SeriesOptions, DataFrameOptions } from 'pandas-ts';
 
-// Type a function that accepts a DataFrame
-function summarize(df: DataFrame): DataFrame {
-  return df.groupby('group').mean();
-}
+const opts: SeriesOptions = {
+  index: ['a', 'b', 'c'],
+  name: 'my_series',
+  dtype: 'float64',
+};
+
+const dfOpts: DataFrameOptions = {
+  index: [0, 1, 2],
+  columns: ['x', 'y', 'z'],
+};
 ```
 
-## ESM and CJS
+## GroupBy types
 
-pandas-ts ships both ESM and CommonJS bundles:
+```ts
+import type { DataFrameGroupBy, SeriesGroupBy } from 'pandas-ts';
 
-| Import style | File |
-|---|---|
-| `import` (ESM) | `dist/esm/index.js` |
-| `require` (CJS) | `dist/cjs/index.js` |
-| TypeScript types | `dist/types/index.d.ts` |
+const gbdf: DataFrameGroupBy = df.groupby('city');
+const gbs: SeriesGroupBy = s.groupby(labels);
+```
 
-Both are selected automatically by Node.js and bundlers.
+## Window types
+
+```ts
+import type { RollingWindow, ExpandingWindow, ExponentialMovingWindow } from 'pandas-ts';
+
+const rolling: RollingWindow = s.rolling(3);
+const expanding: ExpandingWindow = s.expanding();
+const ewm: ExponentialMovingWindow = s.ewm({ span: 5 });
+```
+
+## Offset types
+
+```ts
+import type { DateOffset } from 'pandas-ts';
+import { BusinessDay, MonthEnd, Week } from 'pandas-ts';
+
+function advanceDate(offset: DateOffset, date: Date): Date {
+  return offset.apply(date);
+}
+
+advanceDate(new BusinessDay(1), new Date());
+advanceDate(new MonthEnd(1), new Date());
+```
+
+## Strict nullability
+
+pandas-ts uses `null` (not `undefined`) as the missing-value sentinel in output types. When `skipna` is false, numeric reductions can return `null | number`:
+
+```ts
+const result: number | null = s.mean({ skipna: false });
+```
+
+## Utility types
+
+```ts
+import type {
+  Scalar,
+  AggFunc,
+  JoinHow,
+  Axis,
+} from 'pandas-ts';
+
+// AggFunc: 'sum' | 'mean' | 'min' | 'max' | 'count' | 'std' | 'var' | 'first' | 'last'
+// JoinHow: 'inner' | 'outer' | 'left' | 'right'
+// Axis: 0 | 1 | 'index' | 'columns'
+```

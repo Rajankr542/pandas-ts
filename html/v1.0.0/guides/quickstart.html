@@ -33,7 +33,7 @@
 <div class="shell">
   <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li class="active"><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
   <main id="content" class="content">
-<article class="prose"><p>A ten-minute tour of pandas-ts. Assumes you have <a href="/guides/installation.html">installed</a> the package.</p>
+<article class="prose"><p>A ten-minute tour of pandas-ts. Assumes you have <a href="guides/installation.html">installed</a> the package.</p>
 <div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd, { Series, DataFrame, read_csv } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;</code></pre></div>
 <h2 id="create-a-series">Create a Series<a class="anchor" href="#create-a-series" aria-label="Link to this section">#</a></h2>
 <div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> s = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">10</span>, <span class="t-num">20</span>, <span class="t-num">30</span>, <span class="t-num">40</span>, <span class="t-num">50</span>], { name: <span class="t-str">'prices'</span> });
@@ -134,7 +134,7 @@ s.<span class="t-fn">fillna</span>(<span class="t-num">0</span>).<span class="t-
     <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
   </div>
 </div>
-<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."}]};</script>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"]};</script>
 <script src="../search-index.js" defer></script>
 <script src="../../assets/app.js" defer></script>
 </body>

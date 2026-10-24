@@ -4,10 +4,9 @@
 //
 // Output:
 //   html/index.html              redirects to the latest version
-//   html/latest.html             same
-//   html/versions.json           version list (read by the version picker)
-//   html/assets/                 shared CSS/JS/icons
-//   html/v<version>/...          one self-contained folder per version
+//   html/versions.json
+//   html/assets/
+//   html/v<version>/...
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -49,8 +48,10 @@ rmSync(outRoot, { recursive: true, force: true });
 mkdirSync(join(outRoot, "assets"), { recursive: true });
 cpSync(join(here, "site/assets"), join(outRoot, "assets"), { recursive: true });
 
+const allPages = {};
 const built = [];
 for (const version of versions) built.push(await loadVersion(version));
+for (const v of built) allPages[v.version] = v.pages.map((p) => p.path);
 for (const v of built) writeVersion(v);
 
 writeFileSync(join(outRoot, "versions.json"), JSON.stringify({ latest, versions }, null, 1) + "\n");
@@ -91,8 +92,8 @@ function fillTokens(text, V) {
     .replace(/\{\{node\}\}/g, m.node)
     .replace(/\{\{pandas\}\}/g, m.pandas ?? "2.2.3")
     .replace(/\{\{coverage\}\}/g, `~${m.coverage.coverage}%`)
-    .replace(/\{\{series_methods\}\}/g, String(m.coverage.implemented_series ?? ""))
-    .replace(/\{\{df_methods\}\}/g, String(m.coverage.implemented_dataframe ?? ""));
+    .replace(/\{\{series_methods\}\}/g, String(m.coverage.implemented_series))
+    .replace(/\{\{df_methods\}\}/g, String(m.coverage.implemented_dataframe));
 }
 
 function writeVersion(V) {
@@ -100,10 +101,10 @@ function writeVersion(V) {
   mkdirSync(join(vDir, "guides"), { recursive: true });
   mkdirSync(join(vDir, "reference"), { recursive: true });
 
-  const ver = { version: V.version, latest, versions, pages: V.pages };
+  const ver = { version: V.version, latest, versions };
 
-  const guidesSidebar = buildGuidesSidebar(V);
-  const refSidebar = buildRefSidebar(V);
+  const guidesSidebar = buildGuidesSidebar(V, "guides/");
+  const refSidebar = buildRefSidebar(V, "reference/");
 
   // Guide pages
   for (const section of V.guideOrder) {
@@ -111,7 +112,8 @@ function writeVersion(V) {
       const mdPath = join(here, "versions", V.version, "guides", `${g.file}.md`);
       if (!existsSync(mdPath)) continue;
       const md = readFileSync(mdPath, "utf8");
-      const r = renderMarkdown(fillTokens(md, V), {});
+      const link = (href) => resolveLink(href, `guides/${g.file}.html`, V);
+      const r = renderMarkdown(fillTokens(md, V), { link });
       const html = page({
         title: g.title,
         description: g.description,
@@ -126,13 +128,13 @@ function writeVersion(V) {
         bodyClass: "guide",
       });
       writeFileSync(join(vDir, "guides", `${g.file}.html`), html);
-      V.pages.push({ path: `guides/${g.file}.html`, title: g.title, description: g.description ?? "" });
+      V.pages.push({ path: `guides/${g.file}.html`, title: g.title, description: g.description });
     }
   }
 
   // Reference index
   {
-    const body = refIndexBody(V);
+    const body = refIndexBody(V, "reference/index.html");
     const html = page({
       title: "API Reference",
       description: `Complete API reference for pandas-ts ${V.version}.`,
@@ -145,15 +147,15 @@ function writeVersion(V) {
       ver,
     });
     writeFileSync(join(vDir, "reference", "index.html"), html);
-    V.pages.push({ path: "reference/index.html", title: "API Reference", description: "" });
+    V.pages.push({ path: "reference/index.html", title: "API Reference" });
   }
 
   // Reference section pages
   for (const cat of V.categories) {
-    const { toc, body } = categoryBody(V, cat);
+    const { toc, body } = categoryBody(V, cat, `reference/${cat.id}.html`);
     const html = page({
       title: cat.title,
-      description: cat.intro ?? "",
+      description: cat.intro,
       body,
       toRoot: "../../",
       toVer: "../",
@@ -164,12 +166,13 @@ function writeVersion(V) {
       ver,
     });
     writeFileSync(join(vDir, "reference", `${cat.id}.html`), html);
-    V.pages.push({ path: `reference/${cat.id}.html`, title: cat.title, description: cat.intro ?? "" });
+    V.pages.push({ path: `reference/${cat.id}.html`, title: cat.title });
   }
 
   // Compatibility page
   {
-    const r = renderMarkdown(fillTokens(V.compat, V), {});
+    const link = (href) => resolveLink(href, "compatibility.html", V);
+    const r = renderMarkdown(fillTokens(V.compat, V), { link });
     const html = page({
       title: "pandas compatibility",
       description: "Known differences between pandas-ts and Python pandas.",
@@ -183,12 +186,13 @@ function writeVersion(V) {
       ver,
     });
     writeFileSync(join(vDir, "compatibility.html"), html);
-    V.pages.push({ path: "compatibility.html", title: "pandas compatibility", description: "" });
+    V.pages.push({ path: "compatibility.html", title: "pandas compatibility" });
   }
 
   // Changelog
   {
-    const r = renderMarkdown(fillTokens(V.changelog, V), {});
+    const link = (href) => resolveLink(href, "changelog.html", V);
+    const r = renderMarkdown(fillTokens(V.changelog, V), { link });
     const html = page({
       title: "Changelog",
       description: "pandas-ts release notes.",
@@ -202,93 +206,82 @@ function writeVersion(V) {
       ver,
     });
     writeFileSync(join(vDir, "changelog.html"), html);
-    V.pages.push({ path: "changelog.html", title: "Changelog", description: "" });
+    V.pages.push({ path: "changelog.html", title: "Changelog" });
   }
 
-  // Version index → redirect to guides/index.html
-  writeFileSync(join(vDir, "index.html"), redirectPage("guides/index.html"));
-  V.pages.push({ path: "index.html", title: "Index", description: "" });
+  // Version index (redirect to guides/index.html)
+  writeFileSync(join(vDir, "index.html"), redirectPage(`guides/index.html`));
+  V.pages.push({ path: "index.html", title: "Index" });
 
   // search-index.js
-  const idx = V.pages.map((p) => ({ path: p.path, title: p.title, description: p.description }));
+  const idx = V.pages.map((p) => ({ path: p.path, title: p.title, description: p.description ?? "" }));
   writeFileSync(join(vDir, "search-index.js"), `window.__searchIndex = ${JSON.stringify(idx)};`);
 
   console.log(`  v${V.version}: ${V.pages.length} pages`);
 }
 
-// ---------------------------------------------------------------------------
-
-function buildGuidesSidebar(V) {
+function buildGuidesSidebar(V, prefix) {
   return (activePath) => {
     const items = V.guideOrder.map((section) => {
-      const links = section.pages
-        .map((g) => {
-          const href = `guides/${g.file}.html`;
-          const isActive = activePath === href;
-          return `<li${isActive ? ' class="active"' : ""}><a href="${esc(g.file)}.html">${esc(g.title)}</a></li>`;
-        })
-        .join("");
+      const links = section.pages.map((g) => {
+        const href = `${prefix}${g.file}.html`;
+        return `<li${activePath === href ? ' class="active"' : ""}><a href="${esc(g.file)}.html">${esc(g.title)}</a></li>`;
+      }).join("");
       return `<li class="section"><span>${esc(section.title)}</span><ul>${links}</ul></li>`;
     }).join("");
     return `<ul class="nav">${items}</ul>`;
   };
 }
 
-function buildRefSidebar(V) {
+function buildRefSidebar(V, prefix) {
   return (activePath) => {
-    const indexActive = activePath === "reference/index.html" ? ' class="active"' : "";
     const items = GROUPS.map(([title, ids]) => {
-      const links = ids
-        .map((id) => {
-          const cat = V.categories.find((c) => c.id === id);
-          if (!cat) return "";
-          const href = `reference/${id}.html`;
-          const isActive = activePath === href;
-          return `<li${isActive ? ' class="active"' : ""}><a href="${esc(id)}.html">${esc(cat.title)}</a></li>`;
-        })
-        .filter(Boolean)
-        .join("");
+      const links = ids.map((id) => {
+        const cat = V.categories.find((c) => c.id === id);
+        if (!cat) return "";
+        const href = `${prefix}${id}.html`;
+        return `<li${activePath === href ? ' class="active"' : ""}><a href="${esc(id)}.html">${esc(cat.title)}</a></li>`;
+      }).filter(Boolean).join("");
       if (!links) return "";
       return `<li class="section"><span>${esc(title)}</span><ul>${links}</ul></li>`;
     }).join("");
+    const indexActive = activePath === `${prefix}index.html` ? ' class="active"' : "";
     return `<ul class="nav"><li${indexActive}><a href="index.html">Overview</a></li>${items}</ul>`;
   };
 }
 
-function refIndexBody(V) {
+function resolveLink(href, fromPath, V) {
+  if (href.startsWith("http")) return href;
+  if (href.startsWith("/guides/")) return href.slice(1);
+  if (href.startsWith("/reference/")) return href.slice(1);
+  return href;
+}
+
+function refIndexBody(V, path) {
   const m = V.meta;
   const sections = GROUPS.map(([title, ids]) => {
-    const cards = ids
-      .map((id) => {
-        const c = V.categories.find((x) => x.id === id);
-        if (!c) return "";
-        return `<a class="card" href="${esc(c.id)}.html"><h3>${esc(c.title)}</h3><p>${inline((c.intro ?? "").slice(0, 120))}</p><span class="count">${c.entries.length} entries</span></a>`;
-      })
-      .filter(Boolean)
-      .join("");
-    if (!cards) return "";
+    const cards = ids.map((id) => {
+      const c = V.categories.find((x) => x.id === id);
+      if (!c) return "";
+      return `<a class="card" href="${c.id}.html"><h3>${esc(c.title)}</h3><p>${inline(c.intro?.slice(0, 100) ?? "")}</p><span class="count">${c.entries.length} entries</span></a>`;
+    }).filter(Boolean).join("");
     return `<section><h2 id="${slugify(title)}">${esc(title)}</h2><div class="cards">${cards}</div></section>`;
   }).join("");
   return `<article class="prose wide-prose">
 <p class="eyebrow">API reference · v${esc(m.version)}</p>
 <h1>API reference</h1>
-<p class="lede">This reference describes every function, class and option in pandas-ts ${esc(m.version)}, grouped by topic. Each entry gives the TypeScript signature, arguments, return type and a runnable example.</p>
+<p class="lede">This reference describes every function, class and option in pandas-ts ${esc(m.version)}, grouped by topic. Each entry gives the TypeScript signature, its arguments, the return type and an example.</p>
 ${sections}
 </article>`;
 }
 
-function categoryBody(V, cat) {
+function categoryBody(V, cat, path) {
   const toc = [];
   const items = cat.entries.map((e) => {
     const id = anchor(e.name);
-    toc.push({ id, text: e.name.split(/[#.]/).pop() ?? e.name, level: 3 });
+    toc.push({ id, text: e.name.split(" ").pop() ?? e.name, level: 3 });
     const args = e.args?.length
-      ? `<h4>Parameters</h4><dl class="params">${e.args
-          .map(
-            (a) =>
-              `<div><dt><code>${esc(a.name)}</code>${a.type ? `<span class="ty">${esc(a.type)}</span>` : ""}</dt><dd>${inline(a.desc)}</dd></div>`,
-          )
-          .join("")}</dl>`
+      ? `<h4>Parameters</h4><dl class="params">${e.args.map((a) => `<div><dt><code>${esc(a.name)}</code>${a.type ? `<span class="ty">${esc(a.type)}</span>` : ""}</dt><dd>${inline(a.desc)}</dd></div>`).join("")}</dl>`
       : "";
     return `<article class="api" id="${id}">
 <header class="api-head"><h3><code>${esc(e.name)}</code></h3><a class="anchor" href="#${id}" aria-label="Link to ${esc(e.name)}">#</a></header>
@@ -299,27 +292,19 @@ ${args}
 <h4>Example</h4><div class="codeblock"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>${highlight(e.example)}</code></pre></div>
 </article>`;
   });
-
-  const tableRows = cat.entries
-    .map(
-      (e) =>
-        `<tr><td><a href="#${anchor(e.name)}"><code>${esc(e.name)}</code></a></td><td>${inline(e.desc.slice(0, 90))}</td></tr>`,
-    )
-    .join("");
-
   return {
     toc,
     body: `<article class="prose ref">
 <p class="eyebrow">API reference</p>
 <h1>${esc(cat.title)}</h1>
 ${cat.intro ? `<p class="lede">${inline(cat.intro)}</p>` : ""}
-<div class="summary-table table"><table><thead><tr><th>Name</th><th>Summary</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+<div class="summary-table table"><table><thead><tr><th>Name</th><th>Summary</th></tr></thead><tbody>${cat.entries
+      .map((e) => `<tr><td><a href="#${anchor(e.name)}"><code>${esc(e.name)}</code></a></td><td>${inline(e.desc.slice(0, 80))}</td></tr>`)
+      .join("")}</tbody></table></div>
 ${items.join("\n")}
 </article>`,
   };
 }
-
-// ---------------------------------------------------------------------------
 
 function redirectPage(to) {
   return `<!doctype html>
@@ -334,8 +319,8 @@ function redirectPage(to) {
 function notFound() {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · pandas-ts</title>
-<style>body{font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#fbfaf7;color:#1d1f23}a{color:#1565c0}main{text-align:center;padding:24px}</style></head>
+<style>body{font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#fbfaf7;color:#1d1f23}a{color:#1565c0}.logo-mark{width:56px;height:56px;margin:0 auto}main{text-align:center;padding:24px}</style></head>
 <body><main><h1>Page not found</h1><p>This page does not exist in this version of the docs.</p><p><a id="home" href="/latest.html">Go to the latest documentation</a></p></main>
-<script>{const m=location.pathname.match(/^(.*?\/)v\d+\.\d+\.\d+[^/]*\//);if(m)document.getElementById("home").href=m[1]+"latest.html";}</script></body></html>
+<script>{const m=location.pathname.match(/^(.*?\/)v\d+\.\d+\.\d+[^/]*\//);if(m){document.getElementById("home").href=m[1]+"latest.html";}}</script></body></html>
 `;
 }

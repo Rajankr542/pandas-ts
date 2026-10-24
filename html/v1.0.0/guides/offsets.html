@@ -33,24 +33,20 @@
 <div class="shell">
   <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li class="active"><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
   <main id="content" class="content">
-<article class="prose"><p>Date offset classes for date arithmetic. All offsets have three methods:</p>
-<ul><li><code>apply(date)</code> — move the date by n units</li><li><code>rollforward(date)</code> — snap to the next valid date if not already on one</li><li><code>rollback(date)</code> — snap to the previous valid date</li></ul>
+<article class="prose"><p>Date offset classes for date arithmetic. All offset classes have three methods:</p>
+<ul><li><code>apply(date)</code> — move the date forward (or backward for negative n)</li><li><code>rollforward(date)</code> — snap to the next valid date if not already on one</li><li><code>rollback(date)</code> — snap to the previous valid date</li></ul>
 <h2 id="available-offsets">Available offsets<a class="anchor" href="#available-offsets" aria-label="Link to this section">#</a></h2>
 <div class="table"><table><thead><tr><th>Class</th><th>Aliases</th><th>Description</th></tr></thead><tbody><tr><td><code>BusinessDay</code></td><td><code>BDay</code></td><td>A business day (Mon–Fri)</td></tr><tr><td><code>MonthEnd</code></td><td><code>ME</code></td><td>Last calendar day of the month</td></tr><tr><td><code>MonthBegin</code></td><td><code>MS</code></td><td>First calendar day of the month</td></tr><tr><td><code>YearEnd</code></td><td><code>YE</code></td><td>Last day of the year</td></tr><tr><td><code>YearBegin</code></td><td><code>YS</code></td><td>First day of the year</td></tr><tr><td><code>QuarterEnd</code></td><td><code>QE</code></td><td>Last day of the quarter</td></tr><tr><td><code>QuarterBegin</code></td><td><code>QS</code></td><td>First day of the quarter</td></tr><tr><td><code>Week</code></td><td>—</td><td>A calendar week</td></tr><tr><td><code>Day</code></td><td>—</td><td>A calendar day</td></tr><tr><td><code>Hour</code></td><td><code>H</code></td><td>One hour</td></tr><tr><td><code>Minute</code></td><td><code>T</code>, <code>Min</code></td><td>One minute</td></tr><tr><td><code>Second</code></td><td><code>S</code></td><td>One second</td></tr><tr><td><code>Milli</code></td><td><code>Millisecond</code>, <code>ms</code></td><td>One millisecond</td></tr><tr><td><code>BusinessHour</code></td><td><code>BH</code></td><td>A business hour (09:00–17:00)</td></tr></tbody></table></div>
 <h2 id="examples">Examples<a class="anchor" href="#examples" aria-label="Link to this section">#</a></h2>
 <div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { BusinessDay, MonthEnd, YearEnd, Week } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 
-<span class="t-com">// Advance by 1 business day (Friday → Monday)</span>
+<span class="t-com">// Advance by 1 business day (Friday -&gt; Monday)</span>
 <span class="t-kw">new</span> <span class="t-fn">BusinessDay</span>(<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-05'</span>)).<span class="t-fn">toDateString</span>();
 <span class="t-res">// =&gt; 'Mon Jan 08 2024'</span>
 
-<span class="t-com">// Last day of the current month from Jan 15</span>
-<span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>(<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-15'</span>)).<span class="t-fn">toDateString</span>();
-<span class="t-res">// =&gt; 'Wed Jan 31 2024'</span>
-
-<span class="t-com">// Last day of the current month — leap year Feb</span>
-<span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>(<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-31'</span>)).<span class="t-fn">toDateString</span>();
-<span class="t-res">// =&gt; 'Thu Feb 29 2024'</span>
+<span class="t-com">// Last day of the current month</span>
+<span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>(<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-02-10'</span>)).<span class="t-fn">toDateString</span>();
+<span class="t-res">// =&gt; 'Thu Feb 29 2024'  (2024 is a leap year)</span>
 
 <span class="t-com">// Advance to Dec 31</span>
 <span class="t-kw">new</span> <span class="t-fn">YearEnd</span>(<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-06-15'</span>)).<span class="t-fn">toISOString</span>().<span class="t-fn">slice</span>(<span class="t-num">0</span>,<span class="t-num">10</span>);
@@ -59,25 +55,45 @@
 <span class="t-com">// 2 weeks forward</span>
 <span class="t-kw">new</span> <span class="t-fn">Week</span>(<span class="t-num">2</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-01'</span>)).<span class="t-fn">getDate</span>();
 <span class="t-res">// =&gt; 15</span></code></pre></div>
+<h2 id="using-with-date-range">Using with date_range<a class="anchor" href="#using-with-date-range" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd, { MonthEnd } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// Monthly date range ending on month-end</span>
+<span class="t-kw">const</span> dates = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-31'</span>, { periods: <span class="t-num">6</span>, freq: <span class="t-str">'ME'</span> });
+
+<span class="t-com">// Quarter ends</span>
+<span class="t-kw">const</span> quarters = pd.<span class="t-fn">date_range</span>(<span class="t-str">'2024-01-01'</span>, { periods: <span class="t-num">4</span>, freq: <span class="t-str">'QE'</span> });</code></pre></div>
 <h2 id="rollforward-and-rollback">rollforward and rollback<a class="anchor" href="#rollforward-and-rollback" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { BusinessDay } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { BusinessDay, MonthEnd } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 <span class="t-kw">const</span> bd = <span class="t-kw">new</span> <span class="t-fn">BusinessDay</span>();
 
-<span class="t-com">// Saturday → next Monday</span>
-bd.<span class="t-fn">rollforward</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-06'</span>)).<span class="t-fn">toDateString</span>();
-<span class="t-res">// =&gt; 'Mon Jan 08 2024'</span>
+bd.<span class="t-fn">rollforward</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-06'</span>));  <span class="t-com">// Saturday -&gt; Monday</span>
+bd.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-07'</span>));     <span class="t-com">// Sunday -&gt; Friday</span>
 
-<span class="t-com">// Sunday → previous Friday</span>
-bd.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-07'</span>)).<span class="t-fn">toDateString</span>();
-<span class="t-res">// =&gt; 'Fri Jan 05 2024'</span></code></pre></div>
-<h2 id="using-with-date-range">Using with date_range<a class="anchor" href="#using-with-date-range" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { date_range } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-com">// Snap to month end</span>
+<span class="t-kw">const</span> me = <span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>();
+me.<span class="t-fn">rollforward</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-15'</span>)).<span class="t-fn">toDateString</span>();  <span class="t-res">// =&gt; 'Wed Jan 31 2024'</span>
+me.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-15'</span>)).<span class="t-fn">toDateString</span>();     <span class="t-res">// =&gt; 'Sun Dec 31 2023'</span></code></pre></div>
+<h2 id="businesshour">BusinessHour<a class="anchor" href="#businesshour" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { BusinessHour } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 
-<span class="t-com">// Month-end dates for all of 2024</span>
-<span class="t-kw">const</span> dates = <span class="t-fn">date_range</span>(<span class="t-str">'2024-01-31'</span>, { periods: <span class="t-num">12</span>, freq: <span class="t-str">'ME'</span> });</code></pre></div></article>
+<span class="t-kw">const</span> bh = <span class="t-kw">new</span> <span class="t-fn">BusinessHour</span>();
+
+<span class="t-com">// Default: 09:00-17:00 Mon-Fri</span>
+bh.<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-05T12:00:00'</span>)).<span class="t-fn">getHours</span>();   <span class="t-res">// =&gt; 13</span>
+
+<span class="t-com">// Custom hours</span>
+<span class="t-kw">const</span> extendedBH = <span class="t-kw">new</span> <span class="t-fn">BusinessHour</span>(<span class="t-num">1</span>, <span class="t-str">'08:00'</span>, <span class="t-str">'20:00'</span>);</code></pre></div>
+<h2 id="negative-offsets">Negative offsets<a class="anchor" href="#negative-offsets" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Go backward</span>
+<span class="t-kw">new</span> <span class="t-fn">BusinessDay</span>(-<span class="t-num">2</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-01-10'</span>)).<span class="t-fn">toDateString</span>();
+<span class="t-res">// =&gt; 'Mon Jan 08 2024' (Wednesday - 2 bdays = Monday)</span>
+
+<span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>(-<span class="t-num">1</span>).<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>(<span class="t-str">'2024-03-31'</span>)).<span class="t-fn">toISOString</span>().<span class="t-fn">slice</span>(<span class="t-num">0</span>,<span class="t-num">10</span>);
+<span class="t-res">// =&gt; '2024-02-29'</span></code></pre></div></article>
 
   </main>
-  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#available-offsets">Available offsets</a></li><li class="l2"><a href="#examples">Examples</a></li><li class="l2"><a href="#rollforward-and-rollback">rollforward and rollback</a></li><li class="l2"><a href="#using-with-date-range">Using with date_range</a></li></ul></aside>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#available-offsets">Available offsets</a></li><li class="l2"><a href="#examples">Examples</a></li><li class="l2"><a href="#using-with-date-range">Using with date_range</a></li><li class="l2"><a href="#rollforward-and-rollback">rollforward and rollback</a></li><li class="l2"><a href="#businesshour">BusinessHour</a></li><li class="l2"><a href="#negative-offsets">Negative offsets</a></li></ul></aside>
 </div>
 <footer class="foot">
   <div class="foot-in">
@@ -114,7 +130,7 @@ bd.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class=
     <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
   </div>
 </div>
-<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."},{"path":"guides/io.html","title":"IO","description":"Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more."},{"path":"guides/datetime.html","title":"Datetime","description":"Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor."}]};</script>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"]};</script>
 <script src="../search-index.js" defer></script>
 <script src="../../assets/app.js" defer></script>
 </body>

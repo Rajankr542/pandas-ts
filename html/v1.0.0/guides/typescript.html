@@ -33,80 +33,93 @@
 <div class="shell">
   <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li><a href="testing.html">Testing</a></li><li class="active"><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
   <main id="content" class="content">
-<article class="prose"><p>pandas-ts is written in TypeScript. Type declarations are included — no <code>@types</code> package needed.</p>
-<h2 id="imports">Imports<a class="anchor" href="#imports" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> pd <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
-<span class="t-com">// or:</span>
-<span class="t-kw">import</span> {
+<article class="prose"><p>pandas-ts is written in TypeScript and exports full type definitions. This page documents the key types and how to use them effectively.</p>
+<h2 id="core-types">Core types<a class="anchor" href="#core-types" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> {
   Series,
   DataFrame,
-  read_csv,
-  concat,
-  merge,
-  date_range,
-  to_datetime,
-  isna,
-  cut,
-  get_dummies,
-  pdEval,
-  infer_freq,
-  BusinessDay,
-  MonthEnd,
-  assert_series_equal,
-  assert_frame_equal,
-  AssertionError,
+  DType,
+  Index,
+  DatetimeIndex,
+  Timestamp,
+  Timedelta,
 } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;</code></pre></div>
-<h2 id="key-types">Key types<a class="anchor" href="#key-types" aria-label="Link to this section">#</a></h2>
-<h3 id="series">Series<a class="anchor" href="#series" aria-label="Link to this section">#</a></h3>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> s: Series = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]);
-s.size;                    <span class="t-com">// number</span>
-s.dtype;                   <span class="t-com">// DType</span>
-s.name;                    <span class="t-com">// string | null</span>
-s.index;                   <span class="t-com">// (string | number)[]</span>
-s.<span class="t-fn">to_list</span>(): unknown[];</code></pre></div>
-<h3 id="dataframe">DataFrame<a class="anchor" href="#dataframe" aria-label="Link to this section">#</a></h3>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df: DataFrame = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>,<span class="t-num">3</span>] });
-df.shape;                  <span class="t-com">// [number, number]</span>
-df.columns;                <span class="t-com">// string[]</span>
-df.index;                  <span class="t-com">// (string | number)[]</span>
-df.<span class="t-fn">col</span>(name: string);      <span class="t-com">// Series</span>
-df.shape[<span class="t-num">0</span>];               <span class="t-com">// number of rows</span>
-df.shape[<span class="t-num">1</span>];               <span class="t-com">// number of columns</span></code></pre></div>
-<h3 id="dtype">DType<a class="anchor" href="#dtype" aria-label="Link to this section">#</a></h3>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code>s.dtype.name;    <span class="t-com">// 'int64' | 'float64' | 'object' | 'bool' | 'datetime64' | 'category' | ...</span></code></pre></div>
-<h3 id="dateoffset-base-class">DateOffset (base class)<a class="anchor" href="#dateoffset-base-class" aria-label="Link to this section">#</a></h3>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { DateOffset, BusinessDay } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<h2 id="generic-series">Generic Series<a class="anchor" href="#generic-series" aria-label="Link to this section">#</a></h2>
+<p><code>Series&lt;T&gt;</code> is generic over the value type:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> numericSeries: Series&lt;number&gt; = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]);
+<span class="t-kw">const</span> strSeries: Series&lt;string&gt; = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-str">'a'</span>, <span class="t-str">'b'</span>, <span class="t-str">'c'</span>]);
+<span class="t-kw">const</span> boolSeries: Series&lt;boolean&gt; = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-kw">true</span>, <span class="t-kw">false</span>, <span class="t-kw">true</span>]);</code></pre></div>
+<p>In most cases TypeScript infers the type automatically:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> s = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]);
+<span class="t-com">// TypeScript infers: Series&lt;number&gt;</span></code></pre></div>
+<h2 id="dataframe-columns">DataFrame columns<a class="anchor" href="#dataframe-columns" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ name: [<span class="t-str">'Alice'</span>, <span class="t-str">'Bob'</span>], age: [<span class="t-num">30</span>, <span class="t-num">25</span>] });
+<span class="t-com">// Inferred: DataFrame&lt;{ name: string; age: number }&gt;</span>
 
-<span class="t-kw">const</span> bd: DateOffset = <span class="t-kw">new</span> <span class="t-fn">BusinessDay</span>(<span class="t-num">1</span>);
-bd.<span class="t-fn">apply</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>());        <span class="t-com">// Date</span>
-bd.<span class="t-fn">rollforward</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>());  <span class="t-com">// Date</span>
-bd.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class="t-fn">Date</span>());     <span class="t-com">// Date</span></code></pre></div>
-<h3 id="assertionerror">AssertionError<a class="anchor" href="#assertionerror" aria-label="Link to this section">#</a></h3>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { AssertionError } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
-<span class="t-kw">try</span> {
-  <span class="t-fn">assert_series_equal</span>(a, b);
-} <span class="t-kw">catch</span> (e: unknown) {
-  <span class="t-kw">if</span> (e <span class="t-kw">instanceof</span> AssertionError) {
-    console.<span class="t-fn">error</span>(e.message);
-  }
+<span class="t-com">// Column access is typed</span>
+<span class="t-kw">const</span> names = df.<span class="t-fn">col</span>(<span class="t-str">'name'</span>);   <span class="t-com">// Series&lt;string&gt;</span>
+<span class="t-kw">const</span> ages = df.<span class="t-fn">col</span>(<span class="t-str">'age'</span>);     <span class="t-com">// Series&lt;number&gt;</span></code></pre></div>
+<h2 id="dtype">DType<a class="anchor" href="#dtype" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> { DType, DTypeName } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> dtype: DType = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]).dtype;
+dtype.name;    <span class="t-com">// DTypeName: 'int64' | 'float64' | 'object' | 'bool' | 'datetime64' | 'category'</span>
+
+<span class="t-com">// Check dtype</span>
+<span class="t-kw">if</span> (dtype.name === <span class="t-str">'float64'</span>) {
+  <span class="t-com">// numeric operations are safe</span>
 }</code></pre></div>
-<h2 id="generic-patterns">Generic patterns<a class="anchor" href="#generic-patterns" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-com">// Type a function that accepts a Series</span>
-<span class="t-kw">function</span> <span class="t-fn">standardize</span>(s: Series): Series {
-  <span class="t-kw">return</span> s.<span class="t-fn">sub</span>(s.<span class="t-fn">mean</span>()).<span class="t-fn">div</span>(s.<span class="t-fn">std</span>());
+<h2 id="seriesoptions-and-dataframeoptions">SeriesOptions and DataFrameOptions<a class="anchor" href="#seriesoptions-and-dataframeoptions" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> { SeriesOptions, DataFrameOptions } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> opts: SeriesOptions = {
+  index: [<span class="t-str">'a'</span>, <span class="t-str">'b'</span>, <span class="t-str">'c'</span>],
+  name: <span class="t-str">'my_series'</span>,
+  dtype: <span class="t-str">'float64'</span>,
+};
+
+<span class="t-kw">const</span> dfOpts: DataFrameOptions = {
+  index: [<span class="t-num">0</span>, <span class="t-num">1</span>, <span class="t-num">2</span>],
+  columns: [<span class="t-str">'x'</span>, <span class="t-str">'y'</span>, <span class="t-str">'z'</span>],
+};</code></pre></div>
+<h2 id="groupby-types">GroupBy types<a class="anchor" href="#groupby-types" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> { DataFrameGroupBy, SeriesGroupBy } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> gbdf: DataFrameGroupBy = df.<span class="t-fn">groupby</span>(<span class="t-str">'city'</span>);
+<span class="t-kw">const</span> gbs: SeriesGroupBy = s.<span class="t-fn">groupby</span>(labels);</code></pre></div>
+<h2 id="window-types">Window types<a class="anchor" href="#window-types" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> { RollingWindow, ExpandingWindow, ExponentialMovingWindow } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> rolling: RollingWindow = s.<span class="t-fn">rolling</span>(<span class="t-num">3</span>);
+<span class="t-kw">const</span> expanding: ExpandingWindow = s.<span class="t-fn">expanding</span>();
+<span class="t-kw">const</span> ewm: ExponentialMovingWindow = s.<span class="t-fn">ewm</span>({ span: <span class="t-num">5</span> });</code></pre></div>
+<h2 id="offset-types">Offset types<a class="anchor" href="#offset-types" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> { DateOffset } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-kw">import</span> { BusinessDay, MonthEnd, Week } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">function</span> <span class="t-fn">advanceDate</span>(offset: DateOffset, date: Date): Date {
+  <span class="t-kw">return</span> offset.<span class="t-fn">apply</span>(date);
 }
 
-<span class="t-com">// Type a function that accepts a DataFrame</span>
-<span class="t-kw">function</span> <span class="t-fn">summarize</span>(df: DataFrame): DataFrame {
-  <span class="t-kw">return</span> df.<span class="t-fn">groupby</span>(<span class="t-str">'group'</span>).<span class="t-fn">mean</span>();
-}</code></pre></div>
-<h2 id="esm-and-cjs">ESM and CJS<a class="anchor" href="#esm-and-cjs" aria-label="Link to this section">#</a></h2>
-<p>pandas-ts ships both ESM and CommonJS bundles:</p>
-<div class="table"><table><thead><tr><th>Import style</th><th>File</th></tr></thead><tbody><tr><td><code>import</code> (ESM)</td><td><code>dist/esm/index.js</code></td></tr><tr><td><code>require</code> (CJS)</td><td><code>dist/cjs/index.js</code></td></tr><tr><td>TypeScript types</td><td><code>dist/types/index.d.ts</code></td></tr></tbody></table></div>
-<p>Both are selected automatically by Node.js and bundlers.</p></article>
+<span class="t-fn">advanceDate</span>(<span class="t-kw">new</span> <span class="t-fn">BusinessDay</span>(<span class="t-num">1</span>), <span class="t-kw">new</span> <span class="t-fn">Date</span>());
+<span class="t-fn">advanceDate</span>(<span class="t-kw">new</span> <span class="t-fn">MonthEnd</span>(<span class="t-num">1</span>), <span class="t-kw">new</span> <span class="t-fn">Date</span>());</code></pre></div>
+<h2 id="strict-nullability">Strict nullability<a class="anchor" href="#strict-nullability" aria-label="Link to this section">#</a></h2>
+<p>pandas-ts uses <code>null</code> (not <code>undefined</code>) as the missing-value sentinel in output types. When <code>skipna</code> is false, numeric reductions can return <code>null | number</code>:</p>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">const</span> result: number | <span class="t-kw">null</span> = s.<span class="t-fn">mean</span>({ skipna: <span class="t-kw">false</span> });</code></pre></div>
+<h2 id="utility-types">Utility types<a class="anchor" href="#utility-types" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> <span class="t-kw">type</span> {
+  Scalar,
+  AggFunc,
+  JoinHow,
+  Axis,
+} <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-com">// AggFunc: 'sum' | 'mean' | 'min' | 'max' | 'count' | 'std' | 'var' | 'first' | 'last'</span>
+<span class="t-com">// JoinHow: 'inner' | 'outer' | 'left' | 'right'</span>
+<span class="t-com">// Axis: 0 | 1 | 'index' | 'columns'</span></code></pre></div></article>
 
   </main>
-  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#imports">Imports</a></li><li class="l2"><a href="#key-types">Key types</a></li><li class="l3"><a href="#series">Series</a></li><li class="l3"><a href="#dataframe">DataFrame</a></li><li class="l3"><a href="#dtype">DType</a></li><li class="l3"><a href="#dateoffset-base-class">DateOffset (base class)</a></li><li class="l3"><a href="#assertionerror">AssertionError</a></li><li class="l2"><a href="#generic-patterns">Generic patterns</a></li><li class="l2"><a href="#esm-and-cjs">ESM and CJS</a></li></ul></aside>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#core-types">Core types</a></li><li class="l2"><a href="#generic-series">Generic Series</a></li><li class="l2"><a href="#dataframe-columns">DataFrame columns</a></li><li class="l2"><a href="#dtype">DType</a></li><li class="l2"><a href="#seriesoptions-and-dataframeoptions">SeriesOptions and DataFrameOptions</a></li><li class="l2"><a href="#groupby-types">GroupBy types</a></li><li class="l2"><a href="#window-types">Window types</a></li><li class="l2"><a href="#offset-types">Offset types</a></li><li class="l2"><a href="#strict-nullability">Strict nullability</a></li><li class="l2"><a href="#utility-types">Utility types</a></li></ul></aside>
 </div>
 <footer class="foot">
   <div class="foot-in">
@@ -143,7 +156,7 @@ bd.<span class="t-fn">rollback</span>(<span class="t-kw">new</span> <span class=
     <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
   </div>
 </div>
-<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."},{"path":"guides/io.html","title":"IO","description":"Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more."},{"path":"guides/datetime.html","title":"Datetime","description":"Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor."},{"path":"guides/offsets.html","title":"tseries.offsets","description":"Date offset classes: BusinessDay, MonthEnd, Week, Hour and friends."},{"path":"guides/testing.html","title":"Testing","description":"pd.testing: assert_series_equal and assert_frame_equal for unit tests."}]};</script>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"]};</script>
 <script src="../search-index.js" defer></script>
 <script src="../../assets/app.js" defer></script>
 </body>

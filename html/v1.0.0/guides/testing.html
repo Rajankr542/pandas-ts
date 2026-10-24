@@ -33,69 +33,75 @@
 <div class="shell">
   <nav class="side" aria-label="Documentation"><ul class="nav"><li class="section"><span>Getting started</span><ul><li><a href="index.html">Introduction</a></li><li><a href="installation.html">Installation</a></li><li><a href="quickstart.html">Quickstart</a></li><li><a href="pandas-migration.html">Coming from pandas</a></li></ul></li><li class="section"><span>Core concepts</span><ul><li><a href="series-basics.html">Series basics</a></li><li><a href="dataframe-basics.html">DataFrame basics</a></li><li><a href="groupby.html">GroupBy</a></li><li><a href="io.html">IO</a></li><li><a href="datetime.html">Datetime</a></li></ul></li><li class="section"><span>Topics</span><ul><li><a href="offsets.html">tseries.offsets</a></li><li class="active"><a href="testing.html">Testing</a></li><li><a href="typescript.html">TypeScript</a></li></ul></li></ul></nav>
   <main id="content" class="content">
-<article class="prose"><p><code>pd.testing</code> provides utilities for comparing Series and DataFrames in your test suites, mirroring <code>pandas.testing</code>.</p>
+<article class="prose"><p><code>pd.testing</code> provides utilities for comparing Series and DataFrames in your tests. These mirror <code>pandas.testing</code>.</p>
 <h2 id="assert-series-equal">assert_series_equal<a class="anchor" href="#assert-series-equal" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_series_equal, Series } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_series_equal, AssertionError } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 
-<span class="t-com">// Passes silently</span>
-<span class="t-fn">assert_series_equal</span>(
-  <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]),
-  <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>])
-);
+<span class="t-kw">const</span> a = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]);
+<span class="t-kw">const</span> b = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>]);
+<span class="t-fn">assert_series_equal</span>(a, b);  <span class="t-com">// passes silently</span>
 
-<span class="t-com">// Approximate equality (default rtol=1e-5, atol=1e-8)</span>
+<span class="t-com">// Approximate equality (default rtol=1e-5)</span>
 <span class="t-fn">assert_series_equal</span>(
   <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.0</span>]),
-  <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.0000001</span>])
-);    <span class="t-com">// passes — within tolerance</span>
+  <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.0000001</span>]),
+);  <span class="t-com">// passes</span>
 
 <span class="t-com">// Strict equality</span>
 <span class="t-fn">assert_series_equal</span>(
   <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.0</span>]),
   <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.0000001</span>]),
-  { check_exact: <span class="t-kw">true</span> }
-);    <span class="t-com">// throws AssertionError</span></code></pre></div>
+  { check_exact: <span class="t-kw">true</span> },
+);  <span class="t-com">// throws AssertionError</span></code></pre></div>
 <h3 id="options">Options<a class="anchor" href="#options" aria-label="Link to this section">#</a></h3>
-<div class="table"><table><thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>check_dtype</code></td><td><code>true</code></td><td>Check that dtypes are the same</td></tr><tr><td><code>check_names</code></td><td><code>true</code></td><td>Check that names match</td></tr><tr><td><code>check_exact</code></td><td><code>false</code></td><td>Require exact equality (no tolerance)</td></tr><tr><td><code>rtol</code></td><td><code>1e-5</code></td><td>Relative tolerance for floats</td></tr><tr><td><code>atol</code></td><td><code>1e-8</code></td><td>Absolute tolerance for floats</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>check_dtype</code></td><td><code>true</code></td><td>Check that dtypes are the same</td></tr><tr><td><code>check_names</code></td><td><code>true</code></td><td>Check that names are the same</td></tr><tr><td><code>check_exact</code></td><td><code>false</code></td><td>Require exact equality for floats</td></tr><tr><td><code>rtol</code></td><td><code>1e-5</code></td><td>Relative tolerance for float comparison</td></tr><tr><td><code>atol</code></td><td><code>1e-8</code></td><td>Absolute tolerance for float comparison</td></tr></tbody></table></div>
 <h2 id="assert-frame-equal">assert_frame_equal<a class="anchor" href="#assert-frame-equal" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_frame_equal, DataFrame } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_frame_equal } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 
+<span class="t-kw">const</span> a = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ x: [<span class="t-num">1</span>, <span class="t-num">2</span>], y: [<span class="t-num">3</span>, <span class="t-num">4</span>] });
+<span class="t-fn">assert_frame_equal</span>(a, a);  <span class="t-com">// passes</span>
+
+<span class="t-com">// Ignore column order</span>
 <span class="t-fn">assert_frame_equal</span>(
-  <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ x: [<span class="t-num">1</span>, <span class="t-num">2</span>], y: [<span class="t-num">3</span>, <span class="t-num">4</span>] }),
-  <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ x: [<span class="t-num">1</span>, <span class="t-num">2</span>], y: [<span class="t-num">3</span>, <span class="t-num">4</span>] })
-);    <span class="t-com">// passes</span></code></pre></div>
+  <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>,<span class="t-num">2</span>], b: [<span class="t-num">3</span>,<span class="t-num">4</span>] }),
+  <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ b: [<span class="t-num">3</span>,<span class="t-num">4</span>], a: [<span class="t-num">1</span>,<span class="t-num">2</span>] }),
+  { check_like: <span class="t-kw">true</span> }
+);  <span class="t-com">// passes</span></code></pre></div>
 <h2 id="assert-index-equal">assert_index_equal<a class="anchor" href="#assert-index-equal" aria-label="Link to this section">#</a></h2>
 <div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_index_equal } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
-
-<span class="t-fn">assert_index_equal</span>([<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'c'</span>], [<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'c'</span>]);    <span class="t-com">// passes</span></code></pre></div>
-<h2 id="assertionerror">AssertionError<a class="anchor" href="#assertionerror" aria-label="Link to this section">#</a></h2>
-<p>All assert functions throw <code>AssertionError</code> on failure:</p>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_series_equal, AssertionError, Series } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
-
-<span class="t-kw">try</span> {
-  <span class="t-fn">assert_series_equal</span>(<span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>]), <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">2</span>]));
-} <span class="t-kw">catch</span> (e) {
-  e <span class="t-kw">instanceof</span> AssertionError;    <span class="t-res">// =&gt; true</span>
-  console.<span class="t-fn">log</span>(e.message);         <span class="t-com">// describes the mismatch</span>
-}</code></pre></div>
-<h2 id="using-with-vitest-or-jest">Using with vitest or Jest<a class="anchor" href="#using-with-vitest-or-jest" aria-label="Link to this section">#</a></h2>
-<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { describe, it } <span class="t-kw">from</span> <span class="t-str">'vitest'</span>;
-<span class="t-kw">import</span> { assert_series_equal, AssertionError } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+<span class="t-fn">assert_index_equal</span>([<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'c'</span>], [<span class="t-str">'a'</span>,<span class="t-str">'b'</span>,<span class="t-str">'c'</span>]);  <span class="t-com">// passes</span>
+<span class="t-fn">assert_index_equal</span>([<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">2</span>], [<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">2</span>]);              <span class="t-com">// passes</span></code></pre></div>
+<h2 id="using-with-vitest-jest">Using with vitest / Jest<a class="anchor" href="#using-with-vitest-jest" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { describe, it, expect } <span class="t-kw">from</span> <span class="t-str">'vitest'</span>;
+<span class="t-kw">import</span> { assert_series_equal, AssertionError, Series } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
 
 <span class="t-fn">describe</span>(<span class="t-str">'my transform'</span>, () =&gt; {
   <span class="t-fn">it</span>(<span class="t-str">'returns expected values'</span>, () =&gt; {
-    <span class="t-kw">const</span> result = <span class="t-fn">myTransform</span>(input);
-    <span class="t-fn">assert_series_equal</span>(result, expected, { rtol: <span class="t-num">1e-4</span> });
+    <span class="t-kw">const</span> input = <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>, <span class="t-num">4</span>, <span class="t-num">5</span>]);
+    <span class="t-kw">const</span> result = input.<span class="t-fn">rolling</span>(<span class="t-num">2</span>).<span class="t-fn">mean</span>();
+    <span class="t-fn">assert_series_equal</span>(
+      result.<span class="t-fn">dropna</span>(),
+      <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1.5</span>, <span class="t-num">2.5</span>, <span class="t-num">3.5</span>, <span class="t-num">4.5</span>]),
+      { rtol: <span class="t-num">1e-10</span> }
+    );
   });
 
-  <span class="t-fn">it</span>(<span class="t-str">'throws on bad input'</span>, () =&gt; {
-    <span class="t-fn">expect</span>(() =&gt; <span class="t-fn">myTransform</span>(badInput))
-      .<span class="t-fn">toThrow</span>(AssertionError);
+  <span class="t-fn">it</span>(<span class="t-str">'throws AssertionError on mismatch'</span>, () =&gt; {
+    <span class="t-fn">expect</span>(() =&gt; {
+      <span class="t-fn">assert_series_equal</span>(<span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">1</span>]), <span class="t-kw">new</span> <span class="t-fn">Series</span>([<span class="t-num">2</span>]));
+    }).<span class="t-fn">toThrow</span>(AssertionError);
   });
-});</code></pre></div></article>
+});</code></pre></div>
+<h2 id="testing-io-round-trips">Testing IO round-trips<a class="anchor" href="#testing-io-round-trips" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><div class="codehead"><span>TypeScript</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code><span class="t-kw">import</span> { assert_frame_equal, DataFrame } <span class="t-kw">from</span> <span class="t-str">'pandas-ts'</span>;
+
+<span class="t-kw">const</span> df = <span class="t-kw">new</span> <span class="t-fn">DataFrame</span>({ a: [<span class="t-num">1</span>, <span class="t-num">2</span>, <span class="t-num">3</span>], b: [<span class="t-str">'x'</span>, <span class="t-str">'y'</span>, <span class="t-str">'z'</span>] });
+<span class="t-kw">const</span> csv = df.<span class="t-fn">to_csv</span>();
+<span class="t-kw">const</span> df2 = pd.<span class="t-fn">read_csv</span>(csv);
+<span class="t-fn">assert_frame_equal</span>(df, df2, { check_dtype: <span class="t-kw">false</span> });  <span class="t-com">// types may widen after CSV round-trip</span></code></pre></div></article>
 
   </main>
-  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#assert-series-equal">assert_series_equal</a></li><li class="l3"><a href="#options">Options</a></li><li class="l2"><a href="#assert-frame-equal">assert_frame_equal</a></li><li class="l2"><a href="#assert-index-equal">assert_index_equal</a></li><li class="l2"><a href="#assertionerror">AssertionError</a></li><li class="l2"><a href="#using-with-vitest-or-jest">Using with vitest or Jest</a></li></ul></aside>
+  <aside class="otp" aria-label="On this page"><p class="otp-title">On this page</p><ul><li class="l2"><a href="#assert-series-equal">assert_series_equal</a></li><li class="l3"><a href="#options">Options</a></li><li class="l2"><a href="#assert-frame-equal">assert_frame_equal</a></li><li class="l2"><a href="#assert-index-equal">assert_index_equal</a></li><li class="l2"><a href="#using-with-vitest-jest">Using with vitest / Jest</a></li><li class="l2"><a href="#testing-io-round-trips">Testing IO round-trips</a></li></ul></aside>
 </div>
 <footer class="foot">
   <div class="foot-in">
@@ -132,7 +138,7 @@
     <p class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span>v1.0.0</span></p>
   </div>
 </div>
-<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"],"pages":[{"path":"guides/index.html","title":"Introduction","description":"pandas-ts brings Python's pandas API to TypeScript and JavaScript, powered by a C++ core through @cyfora/numera."},{"path":"guides/installation.html","title":"Installation","description":"Install pandas-ts from npm. Pure TypeScript, no compiler needed."},{"path":"guides/quickstart.html","title":"Quickstart","description":"A ten-minute tour of pandas-ts: create Series and DataFrames, do math, group, filter and save to CSV."},{"path":"guides/pandas-migration.html","title":"Coming from pandas","description":"How pandas Python code translates to pandas-ts TypeScript: naming, operators, indexing and return values."},{"path":"guides/series-basics.html","title":"Series basics","description":"Construction, indexing, arithmetic, reductions and dtype inference for Series."},{"path":"guides/dataframe-basics.html","title":"DataFrame basics","description":"Construction, selection, assignment, reshaping, merging and aggregation for DataFrame."},{"path":"guides/groupby.html","title":"GroupBy","description":"Split-apply-combine with groupby: aggregation, transformation, filtering and iteration."},{"path":"guides/io.html","title":"IO","description":"Read and write CSV, JSON, Excel, SQL, Parquet, Feather and more."},{"path":"guides/datetime.html","title":"Datetime","description":"Working with dates and times: Timestamp, Timedelta, DatetimeIndex and the .dt accessor."},{"path":"guides/offsets.html","title":"tseries.offsets","description":"Date offset classes: BusinessDay, MonthEnd, Week, Hour and friends."}]};</script>
+<script>window.PANDAS_TS_VERSIONS={"latest":"1.0.0","versions":["1.0.0"]};</script>
 <script src="../search-index.js" defer></script>
 <script src="../../assets/app.js" defer></script>
 </body>
