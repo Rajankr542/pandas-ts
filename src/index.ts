@@ -69,3 +69,12 @@ export {
 export { StringAccessor } from './accessors/string_accessor.js';
 export { DatetimeAccessor } from './accessors/datetime_accessor.js';
 export { CategoricalAccessor } from './accessors/categorical_accessor.js';
+
+// Index types
+export { Index } from './index_types/index.js';
+export { RangeIndex } from './index_types/range_index.js';
+export { Int64Index } from './index_types/int64_index.js';
+export { Float64Index } from './index_types/float64_index.js';
+export { StringIndex } from './index_types/string_index.js';
+export { DatetimeIndex } from './index_types/datetime_index.js';
+export { MultiIndex } from './index_types/multi_index.js';
