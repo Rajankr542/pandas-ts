@@ -15,12 +15,24 @@ export function infer_freq(dates: Date[] | string[]): FreqString {
   if (parsed.length < 2) return null;
 
   // ── Monthly start — check before equal-diff (months are unequal in ms) ────
-  const isMonthStart = parsed.every(d => d.getDate() === 1 && d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0 && d.getMilliseconds() === 0);
+  // A string like '2024-01-01' is parsed as UTC midnight; check using UTC methods.
+  const isMonthStart = parsed.every(d => {
+    // Handles both ISO date strings (UTC) and local midnight
+    const utcDate = d.getUTCDate();
+    const localDate = d.getDate();
+    const utcHour = d.getUTCHours();
+    const localHour = d.getHours();
+    return (utcDate === 1 && utcHour === 0) || (localDate === 1 && localHour === 0);
+  });
   if (isMonthStart) {
     let consecutive = true;
     for (let i = 1; i < parsed.length; i++) {
-      const mDiff = (parsed[i]!.getFullYear() - parsed[i - 1]!.getFullYear()) * 12 +
-        (parsed[i]!.getMonth() - parsed[i - 1]!.getMonth());
+      // Use UTC year/month for ISO date strings, fall back to local
+      const prevY = parsed[i - 1]!.getUTCHours() === 0 ? parsed[i - 1]!.getUTCFullYear() : parsed[i - 1]!.getFullYear();
+      const prevM = parsed[i - 1]!.getUTCHours() === 0 ? parsed[i - 1]!.getUTCMonth() : parsed[i - 1]!.getMonth();
+      const currY = parsed[i]!.getUTCHours() === 0 ? parsed[i]!.getUTCFullYear() : parsed[i]!.getFullYear();
+      const currM = parsed[i]!.getUTCHours() === 0 ? parsed[i]!.getUTCMonth() : parsed[i]!.getMonth();
+      const mDiff = (currY - prevY) * 12 + (currM - prevM);
       if (mDiff !== 1) { consecutive = false; break; }
     }
     if (consecutive) return 'MS';
