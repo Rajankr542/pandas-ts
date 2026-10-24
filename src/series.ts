@@ -10,6 +10,7 @@ import { isMissing, NA } from './na.js';
 import { Rolling, RollingOptions } from './window/rolling.js';
 import { Expanding, ExpandingOptions } from './window/expanding.js';
 import { EWM, EWMOptions } from './window/ewm.js';
+import { SeriesResampler, ResampleOptions } from './resample/resample.js';
 import { StringAccessor } from './accessors/string_accessor.js';
 import { DatetimeAccessor } from './accessors/datetime_accessor.js';
 import { CategoricalAccessor } from './accessors/categorical_accessor.js';
@@ -646,6 +647,10 @@ export class Series {
     return new EWM(this, options);
   }
 
+  resample(freq: string, options: ResampleOptions = {}): SeriesResampler {
+    return new SeriesResampler(this, freq, options);
+  }
+
   // ── Between ──────────────────────────────────────────────────────────────────
 
   between(left: number, right: number, inclusive: 'both' | 'left' | 'right' | 'neither' = 'both'): Series {
@@ -830,6 +835,122 @@ export class Series {
   _getDType(): DType { return this._dtype; }
   _getIndex(): (string | number)[] { return this._index; }
   _setIndex(idx: (string | number)[]): void { this._index = idx; }
+
+  // ── kurtosis ─────────────────────────────────────────────────────────────────
+  kurtosis(): number {
+    const vals: number[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) vals.push(Number(v));
+    }
+    const n = vals.length;
+    if (n < 4) return NaN;
+    const mean = vals.reduce((a, b) => a + b, 0) / n;
+    const std = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1));
+    if (std === 0) return NaN;
+    const kurt = vals.reduce((a, b) => a + ((b - mean) / std) ** 4, 0);
+    return (kurt * n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3)) - (3 * (n - 1) ** 2) / ((n - 2) * (n - 3));
+  }
+
+  // ── skew ─────────────────────────────────────────────────────────────────────
+  skew(): number {
+    const vals: number[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) vals.push(Number(v));
+    }
+    const n = vals.length;
+    if (n < 3) return NaN;
+    const mean = vals.reduce((a, b) => a + b, 0) / n;
+    const std = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1));
+    if (std === 0) return NaN;
+    const s = vals.reduce((a, b) => a + ((b - mean) / std) ** 3, 0);
+    return (n * s) / ((n - 1) * (n - 2));
+  }
+
+  // ── sem ──────────────────────────────────────────────────────────────────────
+  sem(ddof = 1): number {
+    const n = this.count();
+    return n > ddof ? this.std(ddof) / Math.sqrt(n) : NaN;
+  }
+
+  // ── mad ──────────────────────────────────────────────────────────────────────
+  mad(): number {
+    const mean = this.mean();
+    let sum = 0; let n = 0;
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) { sum += Math.abs(Number(v) - mean); n++; }
+    }
+    return n > 0 ? sum / n : NaN;
+  }
+
+  // ── product ──────────────────────────────────────────────────────────────────
+  product(): number {
+    let p = 1;
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) p *= Number(v);
+    }
+    return p;
+  }
+
+  // ── to_numpy ─────────────────────────────────────────────────────────────────
+  to_numpy(): unknown[] {
+    return Array.from({ length: this.size }, (_, i) => this._getAt(i));
+  }
+
+  // ── equals ───────────────────────────────────────────────────────────────────
+  equals(other: Series): boolean {
+    if (this.size !== other.size) return false;
+    for (let i = 0; i < this.size; i++) {
+      const a = this._getAt(i), b = (other as any)._getAt(i);
+      if (a !== b && !(typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b))) return false;
+    }
+    return true;
+  }
+
+  // ── combine ──────────────────────────────────────────────────────────────────
+  combine(other: Series, fn: (a: unknown, b: unknown) => unknown): Series {
+    const result: unknown[] = [];
+    for (let i = 0; i < Math.max(this.size, other.size); i++) {
+      const a = i < this.size ? this._getAt(i) : null;
+      const b = i < other.size ? (other as any)._getAt(i) : null;
+      result.push(fn(a, b));
+    }
+    return new Series(result, { name: this._name ?? undefined });
+  }
+
+  // ── combine_first ─────────────────────────────────────────────────────────────
+  combine_first(other: Series): Series {
+    const result: unknown[] = [];
+    for (let i = 0; i < Math.max(this.size, other.size); i++) {
+      const a = i < this.size ? this._getAt(i) : null;
+      const b = i < other.size ? (other as any)._getAt(i) : null;
+      result.push(!isMissing(a) ? a : b);
+    }
+    return new Series(result, { name: this._name ?? undefined });
+  }
+
+  // ── reindex ──────────────────────────────────────────────────────────────────
+  reindex(index: (string | number)[], options: { fill_value?: unknown } = {}): Series {
+    const fill = options.fill_value ?? NaN;
+    const result = index.map(idx => {
+      const pos = this._index.indexOf(idx);
+      return pos !== -1 ? this._getAt(pos) : fill;
+    });
+    return new Series(result, { index, name: this._name ?? undefined });
+  }
+
+  // ── dot ───────────────────────────────────────────────────────────────────────
+  dot(other: Series): number {
+    let sum = 0;
+    for (let i = 0; i < this.size; i++) {
+      sum += Number(this._getAt(i)) * Number((other as any)._getAt(i));
+    }
+    return sum;
+  }
+
 }
 
 // ── Dtype inference helpers ───────────────────────────────────────────────────

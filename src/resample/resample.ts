@@ -212,8 +212,8 @@ export class DataFrameResampler {
   }
 
   // ── ffill / bfill ─────────────────────────────────────────────────────────────
-  ffill(): DataFrame { return this.mean().ffill(); }
-  bfill(): DataFrame { return this.mean().bfill(); }
+  ffill(): DataFrame { return this.mean().interpolate('pad'); }
+  bfill(): DataFrame { return this.mean().interpolate('backfill'); }
 
   // ── apply ─────────────────────────────────────────────────────────────────────
   apply(fn: (df: DataFrame) => unknown): DataFrame {
@@ -294,10 +294,9 @@ export class SeriesResampler {
 
   private _buildGroups(): Map<number, number[]> {
     const idx = this._series.index;
-    const timestamps = idx.map(v => {
-      if (v instanceof Date) return (v as Date).getTime();
-      if (typeof v === 'number') return v as number;
-      if (typeof v === 'string') return new Date(v as string).getTime();
+    const timestamps = idx.map((v: string | number) => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') return new Date(v).getTime();
       return NaN;
     });
     const validTs = timestamps.filter((t: number) => !isNaN(t));

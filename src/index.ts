@@ -82,3 +82,7 @@ export { Float64Index } from './index_types/float64_index.js';
 export { StringIndex } from './index_types/string_index.js';
 export { DatetimeIndex } from './index_types/datetime_index.js';
 export { MultiIndex } from './index_types/multi_index.js';
+
+// Resample
+export { DataFrameResampler, SeriesResampler } from './resample/resample.js';
+export type { ResampleFreq, ResampleOptions } from './resample/resample.js';
