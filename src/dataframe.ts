@@ -1402,6 +1402,425 @@ export class DataFrame {
 
   // ── ffill / bfill (added via existing _applyToAll) ───────────────────────────
 
+  // ── Aggregation ─────────────────────────────────────────────────────────────
+
+  agg(func: string | string[] | Record<string, string | string[]> | ((df: DataFrame) => unknown)): unknown {
+    if (typeof func === 'function') return func(this);
+    if (typeof func === 'string') {
+      const fns: Record<string, () => unknown> = {
+        sum: () => this.sum(), mean: () => this.mean(), min: () => this.min(),
+        max: () => this.max(), std: () => this.std(), var: () => this.var(),
+        count: () => this.count(), median: () => this.median(),
+        first: () => { const r: Record<string,unknown>={};for(const c of this._columnOrder)r[c]=(this._columns.get(c) as any)._getAt(0);return r; },
+        last: () => { const n=this._index.length-1;const r: Record<string,unknown>={};for(const c of this._columnOrder)r[c]=(this._columns.get(c) as any)._getAt(n);return r; },
+        nunique: () => this.nunique(), skew: () => this.skew(), kurt: () => this.kurtosis(),
+        sem: () => this.sem(), prod: () => this.product(),
+      };
+      const fn = fns[func];
+      if (!fn) throw new ValueError(func);
+      return fn();
+    }
+    if (Array.isArray(func)) {
+      const result: Record<string, unknown> = {};
+      for (const f of func) result[f] = this.agg(f);
+      return result;
+    }
+    // dict: {col: func | func[]}
+    const result: Record<string, unknown> = {};
+    for (const [col, f] of Object.entries(func as Record<string, string | string[]>)) {
+      const s = this._columns.get(col);
+      if (!s) continue;
+      result[col] = (s as any).agg(f);
+    }
+    return result;
+  }
+
+  aggregate = this.agg.bind(this);
+
+  transform(func: string | ((s: Series) => Series)): DataFrame {
+    return this._applyToAll(s => typeof func === 'string' ? (s as any).transform(func) : func(s));
+  }
+
+  // ── Query / Eval ─────────────────────────────────────────────────────────────
+
+  query(expr: string): DataFrame {
+    const rows: number[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      try {
+        const ctx: Record<string, unknown> = {};
+        for (const col of this._columnOrder) ctx[col] = (this._columns.get(col) as any)._getAt(i);
+        let evalExpr = expr;
+        for (const col of this._columnOrder.slice().sort((a,b)=>b.length-a.length)) {
+          const val = ctx[col];
+          evalExpr = evalExpr.replace(new RegExp(`\\b${col}\\b`, 'g'),
+            typeof val === 'string' ? `"${val}"` : String(val));
+        }
+        // eslint-disable-next-line no-new-func
+        const result = new Function(`return (${evalExpr})`)();
+        if (result) rows.push(i);
+      } catch { /* skip */ }
+    }
+    return this._selectRowPositions(rows);
+  }
+
+  evalExpr(expr: string): Series {
+    const data: unknown[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      const ctx: Record<string, unknown> = {};
+      for (const col of this._columnOrder) ctx[col] = (this._columns.get(col) as any)._getAt(i);
+      let evalExpr = expr;
+      for (const col of this._columnOrder.slice().sort((a,b)=>b.length-a.length)) {
+        const val = ctx[col];
+        evalExpr = evalExpr.replace(new RegExp(`\\b${col}\\b`, 'g'),
+          typeof val === 'string' ? `"${val}"` : String(val));
+      }
+      try {
+        // eslint-disable-next-line no-new-func
+        data.push(new Function(`return (${evalExpr})`)());
+      } catch { data.push(NaN); }
+    }
+    return new Series(data, { index: this._index });
+  }
+
+  // ── Join ─────────────────────────────────────────────────────────────────────
+
+  join(other: DataFrame, options: { on?: string; how?: 'left'|'right'|'inner'|'outer'; lsuffix?: string; rsuffix?: string } = {}): DataFrame {
+    const how = options.how ?? 'left';
+    const lsuffix = options.lsuffix ?? '';
+    const rsuffix = options.rsuffix ?? '_right';
+    const lIdx = this._index;
+    const rIdx = (other as any)._index as (string | number)[];
+
+    const rows: Array<{ li: number; ri: number | null }> = [];
+    if (how === 'left' || how === 'outer') {
+      for (let i = 0; i < lIdx.length; i++) {
+        const ri = rIdx.indexOf(lIdx[i]!);
+        rows.push({ li: i, ri: ri === -1 ? null : ri });
+      }
+    }
+    if (how === 'right' || how === 'outer') {
+      for (let i = 0; i < rIdx.length; i++) {
+        if (!lIdx.includes(rIdx[i]!)) rows.push({ li: -1, ri: i });
+      }
+    }
+    if (how === 'inner') {
+      for (let i = 0; i < lIdx.length; i++) {
+        const ri = rIdx.indexOf(lIdx[i]!);
+        if (ri !== -1) rows.push({ li: i, ri });
+      }
+    }
+
+    const result: Record<string, unknown[]> = {};
+    for (const col of this._columnOrder) {
+      const cname = (other as any)._columnOrder.includes(col) ? col + lsuffix : col;
+      result[cname] = rows.map(({ li }) => li >= 0 ? (this._columns.get(col) as any)._getAt(li) : NaN);
+    }
+    for (const col of (other as any)._columnOrder as string[]) {
+      const cname = this._columnOrder.includes(col) ? col + rsuffix : col;
+      result[cname] = rows.map(({ ri }) => ri !== null ? (other as any)._columns.get(col)._getAt(ri) : NaN);
+    }
+    const newIndex = rows.map(({ li, ri }) => li >= 0 ? lIdx[li]! : rIdx[ri!]!);
+    return new DataFrame(result, { index: newIndex });
+  }
+
+  // ── corrwith ─────────────────────────────────────────────────────────────────
+
+  corrwith(other: DataFrame | Series, options: { axis?: 0 | 1 } = {}): Series {
+    if (other instanceof Series) {
+      const result: Record<string, number> = {};
+      for (const col of this._columnOrder) {
+        result[col] = (this._columns.get(col) as any).corr(other);
+      }
+      return new Series(Object.values(result), { index: Object.keys(result) });
+    }
+    const result: Record<string, number> = {};
+    for (const col of this._columnOrder) {
+      const otherCol = (other as any)._columns.get(col);
+      result[col] = otherCol ? (this._columns.get(col) as any).corr(otherCol) : NaN;
+    }
+    return new Series(Object.values(result), { index: Object.keys(result) });
+  }
+
+  // ── from_dict / from_records ─────────────────────────────────────────────────
+
+  static from_dict(data: Record<string, unknown[]>, options: { orient?: 'columns' | 'index' } = {}): DataFrame {
+    if (options.orient === 'index') {
+      const rows = Object.entries(data).map(([idx, vals]) => {
+        const row: Record<string, unknown> = {};
+        if (Array.isArray(vals)) vals.forEach((v, i) => row[String(i)] = v);
+        else Object.assign(row, vals);
+        return row;
+      });
+      return new DataFrame(rows, { index: Object.keys(data) });
+    }
+    return new DataFrame(data);
+  }
+
+  static from_records(records: Record<string, unknown>[], options: { index?: string; columns?: string[] } = {}): DataFrame {
+    const df = new DataFrame(records);
+    if (options.index && df._columns.has(options.index)) {
+      const idxVals = Array.from({ length: df._index.length }, (_, i) => (df._columns.get(options.index!) as any)._getAt(i) as string | number);
+      const subCols = df._columnOrder.filter(c => c !== options.index);
+      const data: Record<string, unknown[]> = {};
+      for (const c of subCols) data[c] = Array.from({ length: df._index.length }, (_, i) => (df._columns.get(c) as any)._getAt(i));
+      return new DataFrame(data, { index: idxVals });
+    }
+    if (options.columns) {
+      const data: Record<string, unknown[]> = {};
+      for (const c of options.columns) {
+        data[c] = Array.from({ length: df._index.length }, (_, i) => (df._columns.get(c) as any)?._getAt(i) ?? NaN);
+      }
+      return new DataFrame(data, { index: df._index });
+    }
+    return df;
+  }
+
+  // ── Indexing helpers ─────────────────────────────────────────────────────────
+
+  at(row: string | number, col: string): unknown {
+    const ri = this._index.indexOf(row);
+    if (ri === -1) throw new Error(`Key error: ${row}`);
+    return (this._columns.get(col) as any)?._getAt(ri);
+  }
+
+  iat(row: number, col: number): unknown {
+    const colName = this._columnOrder[col];
+    if (!colName) throw new Error(`Column index ${col} out of bounds`);
+    return (this._columns.get(colName) as any)._getAt(row);
+  }
+
+  loc(rows: string | number | (string | number)[] | null, cols?: string | string[]): unknown {
+    let rowPositions: number[];
+    if (rows === null || rows === undefined) {
+      rowPositions = Array.from({ length: this._index.length }, (_, i) => i);
+    } else if (Array.isArray(rows)) {
+      rowPositions = rows.map(r => this._index.indexOf(r)).filter(p => p !== -1);
+    } else {
+      const p = this._index.indexOf(rows);
+      rowPositions = p === -1 ? [] : [p];
+    }
+    let colNames: string[];
+    if (!cols) colNames = [...this._columnOrder];
+    else if (Array.isArray(cols)) colNames = cols;
+    else colNames = [cols];
+
+    if (colNames.length === 1 && rowPositions.length === 1 && !Array.isArray(rows) && !Array.isArray(cols)) {
+      return (this._columns.get(colNames[0]!) as any)._getAt(rowPositions[0]!);
+    }
+    const data: Record<string, unknown[]> = {};
+    for (const c of colNames) {
+      data[c] = rowPositions.map(i => (this._columns.get(c) as any)?._getAt(i) ?? NaN);
+    }
+    return new DataFrame(data, { index: rowPositions.map(i => this._index[i]!) });
+  }
+
+  items(): [string, Series][] {
+    return this._columnOrder.map(col => [col, this._columns.get(col)!] as [string, Series]);
+  }
+
+  iteritems = this.items.bind(this);
+
+  iterrows(): [string | number, Record<string, unknown>][] {
+    return this._index.map((idx, i) => {
+      const row: Record<string, unknown> = {};
+      for (const col of this._columnOrder) row[col] = (this._columns.get(col) as any)._getAt(i);
+      return [idx, row] as [string | number, Record<string, unknown>];
+    });
+  }
+
+  itertuples(options: { index?: boolean; name?: string } = {}): unknown[][] {
+    const includeIndex = options.index !== false;
+    return this._index.map((idx, i) => {
+      const row = this._columnOrder.map(col => (this._columns.get(col) as any)._getAt(i));
+      return includeIndex ? [idx, ...row] : row;
+    });
+  }
+
+  keys(): string[] { return [...this._columnOrder]; }
+
+  filter(options: { items?: string[]; like?: string; regex?: string; axis?: 0 | 1 } = {}): DataFrame {
+    const axis = options.axis ?? 1;
+    if (axis === 1) {
+      let cols: string[];
+      if (options.items) cols = options.items.filter(c => this._columnOrder.includes(c));
+      else if (options.like) cols = this._columnOrder.filter(c => c.includes(options.like!));
+      else if (options.regex) { const re = new RegExp(options.regex); cols = this._columnOrder.filter(c => re.test(c)); }
+      else cols = [...this._columnOrder];
+      const data: Record<string, unknown[]> = {};
+      for (const c of cols) data[c] = Array.from({ length: this._index.length }, (_, i) => (this._columns.get(c) as any)._getAt(i));
+      return new DataFrame(data, { index: this._index });
+    }
+    let rows: (string | number)[];
+    if (options.items) rows = options.items.filter(r => this._index.includes(r as any));
+    else if (options.like) rows = this._index.filter(r => String(r).includes(options.like!));
+    else if (options.regex) { const re = new RegExp(options.regex); rows = this._index.filter(r => re.test(String(r))); }
+    else rows = [...this._index];
+    const positions = rows.map(r => this._index.indexOf(r));
+    return this._selectRowPositions(positions);
+  }
+
+  pop(col: string): Series {
+    const s = this._columns.get(col);
+    if (!s) throw new Error(`Column ${col} not found`);
+    this._columns.delete(col);
+    this._columnOrder.splice(this._columnOrder.indexOf(col), 1);
+    return s;
+  }
+
+  insert(loc: number, column: string, value: Series | unknown[]): void {
+    let s: Series;
+    if (value instanceof Series) s = value;
+    else s = new Series(value as unknown[], { index: this._index });
+    this._columns.set(column, s);
+    this._columnOrder.splice(loc, 0, column);
+  }
+
+  // ── Properties ───────────────────────────────────────────────────────────────
+
+  get empty(): boolean { return this._index.length === 0 || this._columnOrder.length === 0; }
+
+  transpose(): DataFrame {
+    const data: Record<string, unknown[]> = {};
+    for (let i = 0; i < this._index.length; i++) {
+      const rowKey = String(this._index[i]);
+      data[rowKey] = this._columnOrder.map(col => (this._columns.get(col) as any)._getAt(i));
+    }
+    return new DataFrame(data, { index: this._columnOrder.map(String) });
+  }
+
+  get attrs(): Record<string, unknown> { return {}; }
+  get flags(): Record<string, unknown> { return { allows_duplicate_labels: true }; }
+
+  // ── add_prefix / add_suffix ──────────────────────────────────────────────────
+
+  add_prefix(prefix: string): DataFrame {
+    const data: Record<string, unknown[]> = {};
+    for (const col of this._columnOrder) {
+      data[prefix + col] = Array.from({ length: this._index.length }, (_, i) => (this._columns.get(col) as any)._getAt(i));
+    }
+    return new DataFrame(data, { index: this._index });
+  }
+
+  add_suffix(suffix: string): DataFrame {
+    const data: Record<string, unknown[]> = {};
+    for (const col of this._columnOrder) {
+      data[col + suffix] = Array.from({ length: this._index.length }, (_, i) => (this._columns.get(col) as any)._getAt(i));
+    }
+    return new DataFrame(data, { index: this._index });
+  }
+
+  // ── select_dtypes ────────────────────────────────────────────────────────────
+
+  select_dtypes(options: { include?: string | string[]; exclude?: string | string[] } = {}): DataFrame {
+    const include = options.include ? (Array.isArray(options.include) ? options.include : [options.include]) : null;
+    const exclude = options.exclude ? (Array.isArray(options.exclude) ? options.exclude : [options.exclude]) : null;
+    const cols = this._columnOrder.filter(col => {
+      const kind = (this._columns.get(col) as any)._dtype.kind;
+      const name = (this._columns.get(col) as any)._dtype.name;
+      if (exclude && (exclude.includes(kind) || exclude.includes(name) || (exclude.includes('number') && (kind === 'float' || kind === 'int')))) return false;
+      if (include) return include.includes(kind) || include.includes(name) || (include.includes('number') && (kind === 'float' || kind === 'int'));
+      return true;
+    });
+    const data: Record<string, unknown[]> = {};
+    for (const c of cols) data[c] = Array.from({ length: this._index.length }, (_, i) => (this._columns.get(c) as any)._getAt(i));
+    return new DataFrame(data, { index: this._index });
+  }
+
+  // ── convert_dtypes / infer_objects ───────────────────────────────────────────
+
+  infer_objects(): DataFrame { return this.copy(); }
+  convert_dtypes(): DataFrame { return this.copy(); }
+
+  // ── mode ─────────────────────────────────────────────────────────────────────
+
+  mode(options: { axis?: 0 | 1; numeric_only?: boolean } = {}): DataFrame {
+    const data: Record<string, unknown[]> = {};
+    for (const col of this._columnOrder) {
+      const s = this._columns.get(col)!;
+      const modes = (s as any).mode();
+      data[col] = Array.from({ length: (modes as any).size }, (_: unknown, i: number) => (modes as any)._getAt(i));
+    }
+    const maxLen = Math.max(...Object.values(data).map(a => a.length));
+    for (const col of this._columnOrder) {
+      while (data[col]!.length < maxLen) data[col]!.push(NaN);
+    }
+    return new DataFrame(data);
+  }
+
+  // ── replace ──────────────────────────────────────────────────────────────────
+
+  replace(to_replace: unknown | unknown[] | Record<string, unknown>, value?: unknown): DataFrame {
+    return this._applyToAll(s => (s as any).replace(to_replace, value));
+  }
+
+  // ── align ────────────────────────────────────────────────────────────────────
+
+  align(other: DataFrame, options: { join?: 'inner' | 'outer' | 'left' | 'right' } = {}): [DataFrame, DataFrame] {
+    const join = options.join ?? 'outer';
+    const thisIdx = this._index;
+    const otherIdx = (other as any)._index as (string | number)[];
+    let idx: (string | number)[];
+    if (join === 'inner') idx = thisIdx.filter(i => otherIdx.includes(i));
+    else if (join === 'left') idx = [...thisIdx];
+    else if (join === 'right') idx = [...otherIdx];
+    else { const s = new Set([...thisIdx, ...otherIdx]); idx = [...s]; }
+    const reindex = (df: DataFrame, newIdx: (string | number)[]) => {
+      const data: Record<string, unknown[]> = {};
+      for (const col of (df as any)._columnOrder as string[]) {
+        data[col] = newIdx.map(i => {
+          const p = (df as any)._index.indexOf(i);
+          return p === -1 ? NaN : (df as any)._columns.get(col)._getAt(p);
+        });
+      }
+      return new DataFrame(data, { index: newIdx });
+    };
+    return [reindex(this, idx), reindex(other, idx)];
+  }
+
+  // ── droplevel / reorder_levels ───────────────────────────────────────────────
+
+  droplevel(_level: number | string, _axis: 0 | 1 = 0): DataFrame { return this.copy(); }
+  reorder_levels(_order: (number | string)[], _axis: 0 | 1 = 0): DataFrame { return this.copy(); }
+
+  // ── to_markdown / to_latex / to_string ───────────────────────────────────────
+
+  to_string(options: { index?: boolean; max_rows?: number; max_cols?: number } = {}): string {
+    void options;
+    return this.toString();
+  }
+
+  to_markdown(options: { index?: boolean } = {}): string {
+    const includeIndex = options.index !== false;
+    const cols = includeIndex ? ['index', ...this._columnOrder] : this._columnOrder;
+    const header = '| ' + cols.join(' | ') + ' |';
+    const sep = '| ' + cols.map(() => '---').join(' | ') + ' |';
+    const rows = this._index.map((idx, i) => {
+      const vals = this._columnOrder.map(col => String((this._columns.get(col) as any)._getAt(i)));
+      const rowVals = includeIndex ? [String(idx), ...vals] : vals;
+      return '| ' + rowVals.join(' | ') + ' |';
+    });
+    return [header, sep, ...rows].join('\n');
+  }
+
+  to_latex(options: { index?: boolean; caption?: string } = {}): string {
+    const includeIndex = options.index !== false;
+    const cols = includeIndex ? ['index', ...this._columnOrder] : this._columnOrder;
+    const header = cols.join(' & ') + ' \\\\';
+    const rows = this._index.map((idx, i) => {
+      const vals = this._columnOrder.map(col => String((this._columns.get(col) as any)._getAt(i)));
+      return (includeIndex ? [String(idx), ...vals] : vals).join(' & ') + ' \\\\';
+    });
+    const cap = options.caption ? `\\caption{${options.caption}}\n` : '';
+    return `\\begin{table}\n${cap}\\begin{tabular}{${'l'.repeat(cols.length)}}\n\\hline\n${header}\n\\hline\n${rows.join('\n')}\n\\hline\n\\end{tabular}\n\\end{table}`;
+  }
+
+  // ── bool ─────────────────────────────────────────────────────────────────────
+
+  bool(): boolean {
+    if (this._index.length !== 1 || this._columnOrder.length !== 1) throw new Error('DataFrame truth value is ambiguous');
+    return Boolean((this._columns.get(this._columnOrder[0]!) as any)._getAt(0));
+  }
+
 }
 
 function _arrEqual(a: unknown[], b: unknown[]): boolean {

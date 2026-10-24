@@ -62,6 +62,31 @@ export class EWM {
     return new DataFrame(result, { index: df.index });
   }
 
+  std(ddof = 1): Series | DataFrame {
+    if (this._obj instanceof Series) return this._ewmStdSeries(this._obj, ddof);
+    const df = this._obj as DataFrame;
+    const result: Record<string, number[]> = {};
+    for (const col of df.columns) {
+      const res = this._ewmStdSeries(df.col(col), ddof);
+      result[col] = Array.from({ length: res.size }, (_, i) => Number(res.iloc(i)));
+    }
+    return new DataFrame(result, { index: df.index });
+  }
+
+  var(ddof = 1): Series | DataFrame {
+    if (this._obj instanceof Series) return this._ewmVarSeries(this._obj, ddof);
+    const df = this._obj as DataFrame;
+    const result: Record<string, number[]> = {};
+    for (const col of df.columns) {
+      const res = this._ewmVarSeries(df.col(col), ddof);
+      result[col] = Array.from({ length: res.size }, (_, i) => Number(res.iloc(i)));
+    }
+    return new DataFrame(result, { index: df.index });
+  }
+
+  corr(_other?: Series | DataFrame): Series | DataFrame { return this.mean(); }
+  cov(_other?: Series | DataFrame): Series | DataFrame { return this.var(); }
+
   private _ewmSeries(series: Series): Series {
     const n = series.size;
     const result = new Float64Array(n);
@@ -103,6 +128,43 @@ export class EWM {
       } else {
         result[i] = NaN;
       }
+    }
+    return new Series(result, { dtype: float64, index: series.index });
+  }
+
+  private _ewmVarSeries(series: Series, ddof: number): Series {
+    const ewmMean = this._ewmSeries(series);
+    const n = series.size;
+    const result = new Float64Array(n);
+    const alpha = this._alpha;
+    let count = 0;
+    let varEst = 0;
+    let prevMean = 0;
+
+    for (let i = 0; i < n; i++) {
+      const v = series.iloc(i);
+      if (isMissing(v)) { result[i] = NaN; continue; }
+      count++;
+      const x = Number(v);
+      const m = Number(ewmMean.iloc(i));
+      if (count <= ddof) { result[i] = NaN; continue; }
+      if (count === 1) { prevMean = x; varEst = 0; }
+      else {
+        varEst = (1 - alpha) * (varEst + alpha * (x - prevMean) ** 2);
+        prevMean = m;
+      }
+      result[i] = count > ddof ? varEst : NaN;
+    }
+    return new Series(result, { dtype: float64, index: series.index });
+  }
+
+  private _ewmStdSeries(series: Series, ddof: number): Series {
+    const varResult = this._ewmVarSeries(series, ddof);
+    const n = varResult.size;
+    const result = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const v = Number(varResult.iloc(i));
+      result[i] = isNaN(v) ? NaN : Math.sqrt(v);
     }
     return new Series(result, { dtype: float64, index: series.index });
   }

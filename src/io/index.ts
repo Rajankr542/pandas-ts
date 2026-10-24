@@ -18,3 +18,10 @@ export { read_feather, to_feather } from './feather.js';
 export { read_pickle, to_pickle } from './pickle.js';
 
 export { read_clipboard, to_clipboard } from './clipboard.js';
+
+export { read_html, to_html } from './html.js';
+export { read_xml, to_xml } from './xml.js';
+export { read_fwf } from './fwf.js';
+export type { ReadFwfOptions } from './fwf.js';
+export { read_hdf, to_hdf } from './hdf.js';
+export { read_stata, to_stata } from './stata.js';

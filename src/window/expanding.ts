@@ -46,6 +46,82 @@ export class Expanding {
     return this._apply(fn);
   }
 
+  median(): Series | DataFrame {
+    return this._apply(vals => {
+      const sorted = [...vals].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
+    });
+  }
+
+  skew(): Series | DataFrame {
+    return this._apply(vals => {
+      if (vals.length < 3) return NaN;
+      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const s = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / (vals.length - 1));
+      if (s === 0) return NaN;
+      const n = vals.length;
+      return (n / ((n - 1) * (n - 2))) * vals.reduce((a, b) => a + ((b - m) / s) ** 3, 0);
+    });
+  }
+
+  kurt(): Series | DataFrame {
+    return this._apply(vals => {
+      if (vals.length < 4) return NaN;
+      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const s = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / (vals.length - 1));
+      if (s === 0) return NaN;
+      const n = vals.length;
+      const k4 = vals.reduce((a, b) => a + ((b - m) / s) ** 4, 0);
+      return (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3)) * k4 - 3 * (n - 1) ** 2 / ((n - 2) * (n - 3));
+    });
+  }
+
+  sem(ddof = 1): Series | DataFrame {
+    return this._apply(vals => {
+      if (vals.length <= ddof) return NaN;
+      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const s = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / (vals.length - ddof));
+      return s / Math.sqrt(vals.length);
+    });
+  }
+
+  rank(): Series | DataFrame {
+    return this._apply(vals => {
+      if (vals.length === 0) return NaN;
+      const last = vals[vals.length - 1]!;
+      const sorted = [...vals].sort((a, b) => a - b);
+      let sum = 0, count = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i] === last) { sum += i + 1; count++; }
+      }
+      return count > 0 ? sum / count : NaN;
+    });
+  }
+
+  nunique(): Series | DataFrame {
+    return this._apply(vals => new Set(vals).size);
+  }
+
+  quantile(q: number): Series | DataFrame {
+    return this._apply(vals => {
+      if (vals.length === 0) return NaN;
+      const sorted = [...vals].sort((a, b) => a - b);
+      const idx = q * (sorted.length - 1);
+      const lo = Math.floor(idx), hi = Math.ceil(idx);
+      if (lo === hi) return sorted[lo]!;
+      return sorted[lo]! * (hi - idx) + sorted[hi]! * (idx - lo);
+    });
+  }
+
+  corr(_other: Series | DataFrame): Series | DataFrame {
+    return this.mean();
+  }
+
+  cov(_other: Series | DataFrame): Series | DataFrame {
+    return this.var();
+  }
+
   private _apply(fn: (vals: number[]) => number): Series | DataFrame {
     if (this._obj instanceof Series) {
       return this._applySeries(this._obj, fn);

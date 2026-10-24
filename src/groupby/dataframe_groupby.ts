@@ -514,6 +514,12 @@ export class DataFrameGroupBy {
     return (this._df as any)._selectRowPositions(positions) as DataFrame;
   }
 
+  // ── aggregate (alias for agg) ─────────────────────────────────────────────────
+
+  aggregate(spec: Record<string, string | string[]>): DataFrame {
+    return this.agg(spec);
+  }
+
   // ── pipe ─────────────────────────────────────────────────────────────────────
 
   pipe(fn: (g: DataFrameGroupBy) => unknown): unknown {

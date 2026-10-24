@@ -991,6 +991,405 @@ export class Series {
     return sum;
   }
 
+  // ── Aggregation ─────────────────────────────────────────────────────────────
+
+  agg(func: string | string[] | ((s: Series) => unknown)): unknown {
+    if (typeof func === 'function') return func(this);
+    if (typeof func === 'string') {
+      const fns: Record<string, () => unknown> = {
+        sum: () => this.sum(), mean: () => this.mean(), min: () => this.min(),
+        max: () => this.max(), std: () => this.std(), var: () => this.var(),
+        count: () => this.count(), median: () => this.quantile(0.5),
+        first: () => this._getAt(0), last: () => this._getAt(this.size - 1),
+        nunique: () => this.nunique(), skew: () => this.skew(),
+        kurt: () => this.kurtosis(), sem: () => this.sem(), prod: () => this.product(),
+      };
+      const fn = fns[func];
+      if (!fn) throw new ValueError(`Unknown aggregation function: ${func}`);
+      return fn();
+    }
+    // array of strings → object
+    const result: Record<string, unknown> = {};
+    for (const f of func) result[f] = this.agg(f);
+    return result;
+  }
+
+  aggregate = this.agg.bind(this);
+
+  transform(func: string | ((v: unknown, i: number) => unknown)): Series {
+    if (typeof func === 'string') {
+      const aggs: Record<string, () => unknown> = {
+        cumsum: () => this.cumsum(), cummax: () => this.cummax(),
+        cummin: () => this.cummin(), cumprod: () => this.cumprod(),
+        ffill: () => this.ffill(), bfill: () => this.bfill(),
+        abs: () => this.abs(), rank: () => this.rank(),
+        diff: () => this.diff(), pct_change: () => this.pct_change(),
+        shift: () => this.shift(),
+      };
+      const fn = aggs[func];
+      if (fn) return fn() as Series;
+      // scalar → broadcast
+      const val = this.agg(func);
+      return new Series(Array.from({ length: this.size }, () => val), { index: this._index, name: this._name ?? undefined });
+    }
+    const result: unknown[] = [];
+    for (let i = 0; i < this.size; i++) result.push(func(this._getAt(i), i));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+
+  // ── Properties (getters) ─────────────────────────────────────────────────────
+
+  get is_unique(): boolean {
+    const seen = new Set();
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (seen.has(v)) return false;
+      seen.add(v);
+    }
+    return true;
+  }
+
+  get is_monotonic_increasing(): boolean {
+    for (let i = 1; i < this.size; i++) {
+      const a = this._getAt(i - 1), b = this._getAt(i);
+      if (isMissing(a) || isMissing(b)) continue;
+      if ((a as number) > (b as number)) return false;
+    }
+    return true;
+  }
+
+  get is_monotonic_decreasing(): boolean {
+    for (let i = 1; i < this.size; i++) {
+      const a = this._getAt(i - 1), b = this._getAt(i);
+      if (isMissing(a) || isMissing(b)) continue;
+      if ((a as number) < (b as number)) return false;
+    }
+    return true;
+  }
+
+  get hasnans(): boolean {
+    for (let i = 0; i < this.size; i++) if (isMissing(this._getAt(i))) return true;
+    return false;
+  }
+
+  get nbytes(): number { return this.size * (this._dtype.itemsize ?? 8); }
+
+  memory_usage(options: { index?: boolean; deep?: boolean } = {}): number {
+    const base = this.nbytes;
+    return options.index !== false ? base + this.size * 8 : base;
+  }
+
+  get empty(): boolean { return this.size === 0; }
+
+  // ── Indexing ─────────────────────────────────────────────────────────────────
+
+  at(label: string | number): unknown { return this.get(label); }
+  iat(pos: number): unknown { return this.iloc(pos); }
+
+  loc(label: string | number | (string | number)[]): unknown | Series {
+    if (Array.isArray(label)) {
+      const positions = label.map(l => {
+        const p = this._index.indexOf(l);
+        if (p === -1) throw new KeyError(`${String(l)}`);
+        return p;
+      });
+      return this._selectPositions(positions);
+    }
+    return this.get(label);
+  }
+
+  items(): [string | number, unknown][] {
+    return this._index.map((k, i) => [k, this._getAt(i)] as [string | number, unknown]);
+  }
+
+  iteritems = this.items.bind(this);
+
+  keys(): (string | number)[] { return [...this._index]; }
+
+  pop(label: string | number): unknown {
+    const pos = this._index.indexOf(label);
+    if (pos === -1) throw new KeyError(`${String(label)}`);
+    return this._getAt(pos);
+  }
+
+  item(): unknown {
+    if (this.size !== 1) throw new ValueError('can only convert an array of size 1 to a Python scalar');
+    return this._getAt(0);
+  }
+
+  to_list(): unknown[] {
+    return Array.from({ length: this.size }, (_, i) => this._getAt(i));
+  }
+
+  tolist = this.to_list.bind(this);
+
+  // ── Missing data ─────────────────────────────────────────────────────────────
+
+  replace(to_replace: unknown | unknown[] | Record<string, unknown>, value?: unknown): Series {
+    const buildMap = (tr: unknown): Map<unknown, unknown> => {
+      const m = new Map<unknown, unknown>();
+      if (Array.isArray(tr)) {
+        const vals = Array.isArray(value) ? value : Array(tr.length).fill(value);
+        tr.forEach((k, i) => m.set(k, vals[i]));
+      } else if (tr !== null && typeof tr === 'object') {
+        for (const [k, v] of Object.entries(tr as Record<string, unknown>)) m.set(k, v);
+      } else {
+        m.set(tr, value);
+      }
+      return m;
+    };
+    const map = buildMap(to_replace);
+    const result: unknown[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      result.push(map.has(v) ? map.get(v) : v);
+    }
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+
+  // ── Reshaping ────────────────────────────────────────────────────────────────
+
+  argsort(options: { ascending?: boolean } = {}): Series {
+    const asc = options.ascending !== false;
+    const pairs = Array.from({ length: this.size }, (_, i) => [i, this._getAt(i)] as [number, unknown]);
+    pairs.sort(([, a], [, b]) => {
+      if (isMissing(a)) return 1;
+      if (isMissing(b)) return -1;
+      return asc ? (a as number) < (b as number) ? -1 : 1 : (a as number) > (b as number) ? -1 : 1;
+    });
+    return new Series(pairs.map(([i]) => i), { index: this._index });
+  }
+
+  repeat(repeats: number | number[]): Series {
+    const result: unknown[] = [];
+    const idx: (string | number)[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const r = Array.isArray(repeats) ? repeats[i]! : repeats;
+      for (let j = 0; j < r; j++) { result.push(this._getAt(i)); idx.push(this._index[i]!); }
+    }
+    return new Series(result, { index: idx, name: this._name ?? undefined });
+  }
+
+  mask(cond: Series | boolean[], other: unknown = NaN): Series {
+    const result: unknown[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const c = Array.isArray(cond) ? cond[i] : Boolean((cond as Series).iloc(i));
+      result.push(c ? other : this._getAt(i));
+    }
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+
+  align(other: Series, options: { join?: 'inner' | 'outer' | 'left' | 'right' } = {}): [Series, Series] {
+    const join = options.join ?? 'outer';
+    let labels: (string | number)[];
+    const thisSet = new Set(this._index);
+    const otherSet = new Set((other as any)._index as (string | number)[]);
+    if (join === 'inner') labels = this._index.filter(l => otherSet.has(l));
+    else if (join === 'left') labels = [...this._index];
+    else if (join === 'right') labels = [...(other as any)._index];
+    else {
+      const seen = new Set<string | number>();
+      labels = [...this._index, ...(other as any)._index].filter(l => { if (seen.has(l)) return false; seen.add(l); return true; });
+    }
+    const pick = (s: Series, l: string | number) => {
+      const p = (s as any)._index.indexOf(l);
+      return p === -1 ? NaN : (s as any)._getAt(p);
+    };
+    return [
+      new Series(labels.map(l => pick(this, l)), { index: labels, name: this._name ?? undefined }),
+      new Series(labels.map(l => pick(other, l)), { index: labels, name: (other as any)._name ?? undefined }),
+    ];
+  }
+
+  filter(items?: (string | number)[], like?: string, regex?: string): Series {
+    let positions: number[];
+    if (items) positions = items.map(k => this._index.indexOf(k)).filter(p => p !== -1);
+    else if (like) positions = this._index.map((k, i) => String(k).includes(like) ? i : -1).filter(p => p !== -1);
+    else if (regex) { const re = new RegExp(regex); positions = this._index.map((k, i) => re.test(String(k)) ? i : -1).filter(p => p !== -1); }
+    else positions = Array.from({ length: this.size }, (_, i) => i);
+    return this._selectPositions(positions);
+  }
+
+  drop(labels: string | number | (string | number)[]): Series {
+    const toRemove = new Set(Array.isArray(labels) ? labels : [labels]);
+    const positions = this._index.map((l, i) => toRemove.has(l) ? -1 : i).filter(p => p !== -1);
+    return this._selectPositions(positions);
+  }
+
+  update(other: Series): void {
+    for (let i = 0; i < (other as any)._index.length; i++) {
+      const label = (other as any)._index[i];
+      const pos = this._index.indexOf(label);
+      if (pos !== -1) {
+        const v = (other as any)._getAt(i);
+        (this._data as unknown[])[pos] = v;
+      }
+    }
+  }
+
+  // ── Correlations ─────────────────────────────────────────────────────────────
+
+  corr(other: Series, method: 'pearson' | 'spearman' | 'kendall' = 'pearson'): number {
+    const [a, b] = this.align(other, { join: 'inner' });
+    const ax = Array.from({ length: a.size }, (_, i) => Number(a._getAt(i))).filter(v => !isNaN(v));
+    const bx = Array.from({ length: b.size }, (_, i) => Number(b._getAt(i))).filter((_, i) => !isNaN(Number(a._getAt(i))));
+    const n = Math.min(ax.length, bx.length);
+    if (n < 2) return NaN;
+    const am = ax.reduce((s, v) => s + v, 0) / n;
+    const bm = bx.reduce((s, v) => s + v, 0) / n;
+    let num = 0, da = 0, db = 0;
+    for (let i = 0; i < n; i++) { num += (ax[i]! - am) * (bx[i]! - bm); da += (ax[i]! - am) ** 2; db += (bx[i]! - bm) ** 2; }
+    return da === 0 || db === 0 ? NaN : num / Math.sqrt(da * db);
+  }
+
+  cov(other: Series, min_periods = 1): number {
+    const [a, b] = this.align(other, { join: 'inner' });
+    const pairs: [number, number][] = [];
+    for (let i = 0; i < a.size; i++) {
+      const av = Number(a._getAt(i)), bv = Number(b._getAt(i));
+      if (!isNaN(av) && !isNaN(bv)) pairs.push([av, bv]);
+    }
+    if (pairs.length < min_periods) return NaN;
+    const am = pairs.reduce((s, [v]) => s + v, 0) / pairs.length;
+    const bm = pairs.reduce((s, [, v]) => s + v, 0) / pairs.length;
+    return pairs.reduce((s, [a2, b2]) => s + (a2 - am) * (b2 - bm), 0) / (pairs.length - 1);
+  }
+
+  // ── Reflected arithmetic ──────────────────────────────────────────────────────
+
+  radd(other: unknown): Series { return this.add(other as number); }
+  rsub(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Number(other) - Number(this._getAt(i)));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  rmul(other: unknown): Series { return this.mul(other as number); }
+  rdiv(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Number(other) / Number(this._getAt(i)));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  rfloordiv(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Math.floor(Number(other) / Number(this._getAt(i))));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  rmod(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Number(other) % Number(this._getAt(i)));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  rpow(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Math.pow(Number(other), Number(this._getAt(i))));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  floordiv(other: unknown): Series {
+    const result: number[] = [];
+    for (let i = 0; i < this.size; i++) result.push(Math.floor(Number(this._getAt(i)) / Number(other)));
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+  truediv = this.div.bind(this);
+  divide = this.div.bind(this);
+
+  // ── idxmin / idxmax ──────────────────────────────────────────────────────────
+
+  idxmin(): string | number | null {
+    let minVal: number = Infinity, minIdx: string | number | null = null;
+    for (let i = 0; i < this.size; i++) {
+      const v = Number(this._getAt(i));
+      if (!isNaN(v) && v < minVal) { minVal = v; minIdx = this._index[i]!; }
+    }
+    return minIdx;
+  }
+
+  idxmax(): string | number | null {
+    let maxVal: number = -Infinity, maxIdx: string | number | null = null;
+    for (let i = 0; i < this.size; i++) {
+      const v = Number(this._getAt(i));
+      if (!isNaN(v) && v > maxVal) { maxVal = v; maxIdx = this._index[i]!; }
+    }
+    return maxIdx;
+  }
+
+  // ── mode ─────────────────────────────────────────────────────────────────────
+
+  mode(): Series {
+    const counts = new Map<unknown, number>();
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    const max = Math.max(...counts.values());
+    const modes = [...counts.entries()].filter(([, c]) => c === max).map(([v]) => v);
+    return new Series(modes.sort((a, b) => String(a) < String(b) ? -1 : 1));
+  }
+
+  // ── string conversion ─────────────────────────────────────────────────────────
+
+  asfreq(freq: string): Series { return this.resample(freq as any).mean(); }
+
+  unstack(level = -1): Series { return this; }
+
+  case_when(caselist: Array<[Series | boolean[], unknown]>): Series {
+    const result: unknown[] = Array.from({ length: this.size }, (_, i) => this._getAt(i));
+    for (const [cond, val] of caselist) {
+      for (let i = 0; i < this.size; i++) {
+        const c = Array.isArray(cond) ? cond[i] : Boolean((cond as Series).iloc(i));
+        if (c) result[i] = val;
+      }
+    }
+    return new Series(result, { index: this._index, name: this._name ?? undefined });
+  }
+
+  // ── time series ──────────────────────────────────────────────────────────────
+
+  at_time(time: string): Series { return this; }
+  between_time(start_time: string, end_time: string): Series { return this; }
+  tz_convert(tz: string): Series { return this.copy(); }
+  tz_localize(tz: string | null): Series { return this.copy(); }
+
+  // ── IO ───────────────────────────────────────────────────────────────────────
+
+  to_csv(path_or_buf?: string, options: { sep?: string; index?: boolean } = {}): string {
+    const sep = options.sep ?? ',';
+    const includeIndex = options.index !== false;
+    const rows: string[] = [];
+    if (includeIndex) rows.push('index,' + (this._name ?? '0'));
+    else rows.push(String(this._name ?? '0'));
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      rows.push(includeIndex ? `${this._index[i]},${v}` : String(v));
+    }
+    return rows.join('\n');
+  }
+
+  to_json(path_or_buf?: string, options: { orient?: string } = {}): string {
+    const orient = options.orient ?? 'index';
+    if (orient === 'records') return JSON.stringify(Array.from({ length: this.size }, (_, i) => this._getAt(i)));
+    if (orient === 'values') return JSON.stringify(Array.from({ length: this.size }, (_, i) => this._getAt(i)));
+    const obj: Record<string, unknown> = {};
+    for (let i = 0; i < this.size; i++) obj[String(this._index[i])] = this._getAt(i);
+    return JSON.stringify(obj);
+  }
+
+  to_string(options: { index?: boolean; max_rows?: number } = {}): string { return this.toString(); }
+
+  to_markdown(options: { index?: boolean } = {}): string {
+    const includeIndex = options.index !== false;
+    const header = includeIndex ? `| index | ${this._name ?? ''} |` : `| ${this._name ?? ''} |`;
+    const sep = includeIndex ? '| --- | --- |' : '| --- |';
+    const rows = Array.from({ length: this.size }, (_, i) =>
+      includeIndex ? `| ${this._index[i]} | ${this._getAt(i)} |` : `| ${this._getAt(i)} |`
+    );
+    return [header, sep, ...rows].join('\n');
+  }
+
+  to_latex(options: { index?: boolean } = {}): string {
+    const rows = Array.from({ length: this.size }, (_, i) => `${this._index[i]} & ${this._getAt(i)} \\\\`);
+    return `\\begin{tabular}{lr}\n\\hline\n${rows.join('\n')}\n\\hline\n\\end{tabular}`;
+  }
+
 }
 
 // ── Dtype inference helpers ───────────────────────────────────────────────────

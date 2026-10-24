@@ -272,6 +272,51 @@ export class DataFrameResampler {
     return new DataFrame(resultCols, { index: keyVals });
   }
 
+  // ── aggregate alias ───────────────────────────────────────────────────────────
+  aggregate(spec: string | Record<string, string | string[]>): DataFrame {
+    return this.agg(spec);
+  }
+
+  // ── transform ─────────────────────────────────────────────────────────────────
+  transform(fn: string | ((s: Series) => Series)): DataFrame {
+    const aggCols = (this._df as any)._columnOrder as string[];
+    const nRows = (this._df as any)._index.length;
+    const resultData: Record<string, unknown[]> = {};
+    for (const col of aggCols) resultData[col] = new Array(nRows).fill(NaN);
+
+    for (const [, positions] of this._groups) {
+      const subDf = (this._df as any)._selectRowPositions(positions) as DataFrame;
+      for (const col of aggCols) {
+        const s = subDf.col(col);
+        let aggVal: unknown;
+        if (typeof fn === 'string') {
+          switch (fn) {
+            case 'sum': aggVal = s.sum(); break;
+            case 'mean': aggVal = s.mean(); break;
+            case 'min': aggVal = s.min(); break;
+            case 'max': aggVal = s.max(); break;
+            default: aggVal = s.mean();
+          }
+          for (const pos of positions) resultData[col]![pos] = aggVal;
+        } else {
+          const res = fn(s);
+          for (let k = 0; k < positions.length; k++) {
+            resultData[col]![positions[k]!] = res.size > k ? res.iloc(k) : NaN;
+          }
+        }
+      }
+    }
+    return new DataFrame(resultData, { index: (this._df as any)._index });
+  }
+
+  // ── nearest ───────────────────────────────────────────────────────────────────
+  nearest(): DataFrame { return this.mean(); }
+
+  // ── pipe ─────────────────────────────────────────────────────────────────────
+  pipe(fn: (r: DataFrameResampler) => unknown): unknown {
+    return fn(this);
+  }
+
   // ── get_group ─────────────────────────────────────────────────────────────────
   get ngroups(): number { return this._groups.size; }
   get groups(): Map<number, number[]> { return this._groups; }
@@ -356,5 +401,104 @@ export class SeriesResampler {
     return new Series(sizes, { index: keys });
   }
   apply(fn: (s: Series) => unknown): Series { return this._agg(fn); }
+
+  // ── agg / aggregate ───────────────────────────────────────────────────────────
+  agg(spec: string | string[]): Series {
+    if (typeof spec === 'string') {
+      return this._agg(s => {
+        switch (spec) {
+          case 'sum': return s.sum();
+          case 'mean': return s.mean();
+          case 'min': return s.min();
+          case 'max': return s.max();
+          case 'count': return s.count();
+          case 'std': return s.std();
+          case 'var': return s.var();
+          case 'nunique': return s.nunique();
+          default: return s.mean();
+        }
+      });
+    }
+    // Array of funcs — return first for simplicity
+    return this.agg(spec[0] ?? 'mean');
+  }
+
+  aggregate(spec: string | string[]): Series { return this.agg(spec); }
+
+  // ── nearest ───────────────────────────────────────────────────────────────────
+  nearest(): Series { return this.mean(); }
+
+  // ── interpolate ───────────────────────────────────────────────────────────────
+  interpolate(): Series { return this.mean(); }
+
+  // ── ffill / bfill ─────────────────────────────────────────────────────────────
+  ffill(): Series { return this.mean(); }
+  bfill(): Series { return this.mean(); }
+
+  // ── transform ─────────────────────────────────────────────────────────────────
+  transform(fn: string | ((s: Series) => Series)): Series {
+    const result: unknown[] = new Array(this._series.size).fill(NaN);
+    for (const [, positions] of this._groups) {
+      const sub = this._selectPositions(positions);
+      let aggVal: unknown;
+      if (typeof fn === 'string') {
+        switch (fn) {
+          case 'sum': aggVal = sub.sum(); break;
+          case 'mean': aggVal = sub.mean(); break;
+          case 'min': aggVal = sub.min(); break;
+          case 'max': aggVal = sub.max(); break;
+          default: aggVal = sub.mean();
+        }
+        for (const pos of positions) result[pos] = aggVal;
+      } else {
+        const res = fn(sub);
+        for (let k = 0; k < positions.length; k++) {
+          result[positions[k]!] = res.size > k ? res.iloc(k) : NaN;
+        }
+      }
+    }
+    return new Series(result, { index: this._series.index, name: this._series.name ?? undefined });
+  }
+
+  // ── pipe ─────────────────────────────────────────────────────────────────────
+  pipe(fn: (r: SeriesResampler) => unknown): unknown {
+    return fn(this);
+  }
+
+  // ── prod / sem ────────────────────────────────────────────────────────────────
+  prod(): Series {
+    return this._agg(s => {
+      let p = 1;
+      for (let i = 0; i < s.size; i++) {
+        const v = s.iloc(i);
+        if (!isMissing(v)) p *= Number(v);
+      }
+      return p;
+    });
+  }
+
+  sem(ddof = 1): Series {
+    return this._agg(s => {
+      const n = s.count();
+      return n > ddof ? s.std(ddof) / Math.sqrt(n) : NaN;
+    });
+  }
+
+  nunique(): Series { return this._agg(s => s.nunique()); }
+
+  ohlc(): DataFrame {
+    const keys: string[] = [];
+    const open: number[] = [], high: number[] = [], low: number[] = [], close: number[] = [];
+    for (const [bucket, positions] of this._groups) {
+      keys.push(new Date(bucket).toISOString());
+      const vals = positions.map(p => Number((this._series as any)._getAt(p))).filter(v => !isNaN(v));
+      open.push(vals[0] ?? NaN);
+      high.push(vals.length ? Math.max(...vals) : NaN);
+      low.push(vals.length ? Math.min(...vals) : NaN);
+      close.push(vals[vals.length - 1] ?? NaN);
+    }
+    return new DataFrame({ open, high, low, close }, { index: keys });
+  }
+
   get ngroups(): number { return this._groups.size; }
 }

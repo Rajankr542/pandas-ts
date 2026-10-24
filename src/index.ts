@@ -46,7 +46,12 @@ export { Interval, IntervalIndex } from './interval.js';
 export type { IntervalClosed } from './interval.js';
 
 // Top-level utility functions
-export { cut, qcut, get_dummies, date_range, to_datetime, isna, notna, timedelta_range } from './functions.js';
+export {
+  cut, qcut, get_dummies, date_range, to_datetime, isna, notna, timedelta_range,
+  to_numeric, to_timedelta, unique, value_counts, crosstab, factorize,
+  wide_to_long, lreshape, json_normalize, interval_range, period_range,
+  bdate_range, from_dummies, merge_ordered, merge_asof,
+} from './functions.js';
 export { Timedelta } from './timedelta.js';
 export type { TimedeltaUnit } from './timedelta.js';
 export { Timestamp } from './timestamp.js';
@@ -70,6 +75,11 @@ export {
   read_feather, to_feather,
   read_pickle, to_pickle,
   read_clipboard, to_clipboard,
+  read_html, to_html,
+  read_xml, to_xml,
+  read_fwf,
+  read_hdf, to_hdf,
+  read_stata, to_stata,
 } from './io/index.js';
 
 // Accessors
