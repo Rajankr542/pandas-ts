@@ -2,7 +2,6 @@
 
 [![npm version](https://img.shields.io/npm/v/pandas-ts)](https://www.npmjs.com/package/pandas-ts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/Rajankr542/pandas-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/Rajankr542/pandas-ts/actions/workflows/ci.yml)
 ![node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![platform](https://img.shields.io/badge/platform-Node.js%20%7C%20TypeScript-blue)
 [![pandas api coverage](https://img.shields.io/badge/pandas_api_coverage-~99%25-brightgreen)](https://pandas-ts.cyfora.in)

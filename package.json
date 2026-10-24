@@ -1,7 +1,7 @@
 {
   "name": "pandas-ts",
   "version": "1.0.0",
-  "description": "A 100% pandas-compatible DataFrame & Series library for TypeScript and JavaScript, powered by a high-performance C++ core (Node.js native addon + WebAssembly).",
+  "description": "pandas for TypeScript and JavaScript — ~99% pandas API parity, powered by @cyfora/numera's C++ core.",
   "keywords": [
     "pandas",
     "pandas-ts",
@@ -17,16 +17,19 @@
     "groupby",
     "time-series",
     "analytics",
-    "numpy",
-    "c++",
-    "native",
-    "napi",
-    "webassembly",
-    "wasm",
-    "performance"
+    "numera",
+    "numpy"
   ],
-  "author": "Rajan <rajankr542@gmail.com>",
+  "author": "Rajan Kumar <rajankr542@gmail.com>",
   "license": "MIT",
+  "homepage": "https://pandas-ts.cyfora.in",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rajankr542/pandas-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rajankr542/pandas-ts/issues"
+  },
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -58,6 +61,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "vitest run tests/unit",
     "test": "vitest run",
+    "release": "node scripts/release.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
+    "release:dry": "node scripts/release.mjs --dry-run",
     "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {
