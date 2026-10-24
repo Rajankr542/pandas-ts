@@ -37,6 +37,17 @@ export { NA, NaT, NaN_, isNA, isNaN_, isNaT, isMissing } from './na.js';
 // Top-level convenience functions
 export { concat, merge } from './functions.js';
 
+// New types
+export { Categorical } from './categorical.js';
+export type { CategoricalOptions } from './categorical.js';
+export { Period } from './period.js';
+export type { PeriodFreq } from './period.js';
+export { Interval, IntervalIndex } from './interval.js';
+export type { IntervalClosed } from './interval.js';
+
+// Top-level utility functions
+export { cut, qcut, get_dummies, date_range, to_datetime, isna, notna } from './functions.js';
+
 // Window functions
 export { Rolling } from './window/rolling.js';
 export { Expanding } from './window/expanding.js';
