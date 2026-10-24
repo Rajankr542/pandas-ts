@@ -4,6 +4,8 @@
     "module": "CommonJS",
     "moduleResolution": "Node10",
     "outDir": "dist/cjs",
-    "sourceMap": true
-  }
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts"]
 }

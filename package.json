@@ -43,7 +43,9 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.json",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"

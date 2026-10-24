@@ -4,6 +4,8 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "outDir": "dist/esm",
-    "sourceMap": true
-  }
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts"]
 }
