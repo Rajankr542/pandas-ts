@@ -5,6 +5,10 @@
 import { DataFrame } from './dataframe.js';
 import { Series } from './series.js';
 import { IntervalClosed } from './interval.js';
+import { Timedelta } from './timedelta.js';
+import { Timestamp } from './timestamp.js';
+
+export { Timedelta, Timestamp };
 
 export function concat(dfs: DataFrame[], options: { axis?: 0 | 1; ignore_index?: boolean } = {}): DataFrame {
   return DataFrame.concat(dfs, options);
@@ -146,4 +150,22 @@ export function notna(value: unknown): boolean | Series {
   const r = isna(value);
   if (typeof r === 'boolean') return !r;
   return r;
+}
+
+/** pd.timedelta_range — generate a range of Timedeltas */
+export function timedelta_range(
+  start: string | number,
+  options: { periods?: number; end?: string | number; freq?: string } = {}
+): Series {
+  const freqMap: Record<string, number> = { 'D': 86_400_000, 'H': 3_600_000, 'T': 60_000, 'min': 60_000, 'S': 1000 };
+  const stepMs = freqMap[options.freq ?? 'D'] ?? 86_400_000;
+  const startMs = typeof start === 'number' ? start : new Timedelta(start as string).milliseconds;
+
+  const tds: Timedelta[] = [];
+  if (options.periods) {
+    for (let i = 0; i < options.periods; i++) {
+      tds.push(Timedelta.from_ms(startMs + i * stepMs));
+    }
+  }
+  return new Series(tds);
 }

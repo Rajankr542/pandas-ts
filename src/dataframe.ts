@@ -258,6 +258,55 @@ export class DataFrame {
     return this._applyToAll(s => s.fillna(value));
   }
 
+  ffill(): DataFrame { return this._applyToAll(s => s.ffill()); }
+  bfill(): DataFrame { return this._applyToAll(s => s.bfill()); }
+
+  explode(column: string): DataFrame {
+    const rows: Record<string, unknown>[] = [];
+    for (let i = 0; i < this._index.length; i++) {
+      const v = (this._columns.get(column) as any)._getAt(i);
+      const items = Array.isArray(v) ? v : [v];
+      for (const item of items) {
+        const row: Record<string, unknown> = {};
+        for (const col of this._columnOrder) {
+          row[col] = col === column ? item : (this._columns.get(col) as any)._getAt(i);
+        }
+        rows.push(row);
+      }
+    }
+    return new DataFrame(rows);
+  }
+
+  get_dummies(options: { columns?: string[]; prefix?: string; drop_first?: boolean } = {}): DataFrame {
+    const cols = options.columns ?? this._columnOrder;
+    const prefix = options.prefix ?? '';
+    const dropFirst = options.drop_first ?? false;
+    const data: Record<string, unknown[]> = {};
+    for (const col of this._columnOrder) {
+      if (!cols.includes(col)) {
+        data[col] = Array.from({ length: this._index.length }, (_, i) =>
+          (this._columns.get(col) as any)._getAt(i));
+      }
+    }
+    for (const col of cols) {
+      const s = this._columns.get(col)!;
+      const cats = s.unique().filter(v => v !== null && v !== undefined).map(String).sort();
+      const start = dropFirst ? 1 : 0;
+      for (let k = start; k < cats.length; k++) {
+        const cat = cats[k]!;
+        const colName = prefix ? `${prefix}_${cat}` : `${col}_${cat}`;
+        data[colName] = Array.from({ length: this._index.length }, (_, i) =>
+          String((this._columns.get(col) as any)._getAt(i)) === cat ? 1 : 0);
+      }
+    }
+    return new DataFrame(data, { index: this._index });
+  }
+
+  append(other: DataFrame | Record<string, unknown>, options: { ignore_index?: boolean } = {}): DataFrame {
+    const otherDf = other instanceof DataFrame ? other : new DataFrame([other]);
+    return DataFrame.concat([this, otherDf], options);
+  }
+
   dropna(options: { axis?: 0 | 1; how?: 'any' | 'all'; thresh?: number } = {}): DataFrame {
     const axis = options.axis ?? 0;
     const how = options.how ?? 'any';
@@ -1350,6 +1399,9 @@ export class DataFrame {
     }
     return new DataFrame(data, { index: this._index });
   }
+
+  // ── ffill / bfill (added via existing _applyToAll) ───────────────────────────
+
 }
 
 function _arrEqual(a: unknown[], b: unknown[]): boolean {

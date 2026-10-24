@@ -194,6 +194,46 @@ export class Series {
     return new Series(result, { name: this._name ?? undefined, index: this._index });
   }
 
+  ffill(): Series {
+    const result: unknown[] = new Array(this.size);
+    let last: unknown = null;
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) last = v;
+      result[i] = last;
+    }
+    return new Series(result, { name: this._name ?? undefined, index: this._index });
+  }
+
+  bfill(): Series {
+    const result: unknown[] = new Array(this.size);
+    let last: unknown = null;
+    for (let i = this.size - 1; i >= 0; i--) {
+      const v = this._getAt(i);
+      if (!isMissing(v)) last = v;
+      result[i] = last;
+    }
+    return new Series(result, { name: this._name ?? undefined, index: this._index });
+  }
+
+  explode(): Series {
+    const vals: unknown[] = [];
+    const idx: (string | number)[] = [];
+    for (let i = 0; i < this.size; i++) {
+      const v = this._getAt(i);
+      const origIdx = this._index[i] as string | number;
+      if (Array.isArray(v)) {
+        for (const item of v) { vals.push(item); idx.push(origIdx); }
+      } else { vals.push(v); idx.push(origIdx); }
+    }
+    return new Series(vals, { index: idx, name: this._name ?? undefined });
+  }
+
+  to_frame(name?: string): Record<string, unknown[]> {
+    const colName = String(name ?? this._name ?? '0');
+    return { [colName]: Array.from({ length: this.size }, (_, i) => this._getAt(i)) };
+  }
+
   /** Drop NA values */
   dropna(): Series {
     const keepIdx: number[] = [];
@@ -957,6 +997,11 @@ export class Series {
 
 function inferDTypeFromArray(data: unknown[]): DType {
   if (data.length === 0) return object_;
+  // Scan all values: if any non-missing value is an array, use object
+  for (const v of data) {
+    if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) continue;
+    if (Array.isArray(v)) return object_;
+  }
   for (const v of data) {
     if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) continue;
     if (typeof v === 'bigint') return int64;

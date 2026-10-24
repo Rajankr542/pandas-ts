@@ -46,7 +46,10 @@ export { Interval, IntervalIndex } from './interval.js';
 export type { IntervalClosed } from './interval.js';
 
 // Top-level utility functions
-export { cut, qcut, get_dummies, date_range, to_datetime, isna, notna } from './functions.js';
+export { cut, qcut, get_dummies, date_range, to_datetime, isna, notna, timedelta_range } from './functions.js';
+export { Timedelta } from './timedelta.js';
+export type { TimedeltaUnit } from './timedelta.js';
+export { Timestamp } from './timestamp.js';
 
 // Window functions
 export { Rolling } from './window/rolling.js';
